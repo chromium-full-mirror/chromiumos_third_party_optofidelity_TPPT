@@ -266,14 +266,7 @@ class Context:
 
         test_count = 0
 
-        # Make sure that initial noise and grounding states match what is assumed by code.
-        self.toggle_pause()
-        self.ui.dialog_to_continue("Please make sure that robot is grounded and that noise source is disconnected.")
         self.breakpoint()
-
-        # Keep track of current grounding and noise source status to detect if change is required.
-        current_ground_status = "ground"
-        current_noise_status = ""
 
         for test in executable_tests:
             # Change active tip. Test object must have "finger_name" control.
@@ -288,34 +281,6 @@ class Context:
             # Jump over DUT without specific jump height to avoid problems in case tip was changed.
             active_dut = self.get_active_dut()
             active_dut.jump(0.0, 0.0, active_dut.base_distance)
-
-            # Notify user if grounding is to be changed for test case.
-            if test.controls.ground_status != current_ground_status:
-                self.toggle_pause()
-                if len(test.controls.ground_status) != 0:
-                    self.ui.dialog_to_continue("Please set robot grounding to " + test.controls.ground_status + ".")
-                else: #ground_status is empty
-                    self.ui.dialog_to_continue("Please disconnect robot grounding.")
-                self.breakpoint()
-                current_ground_status = test.controls.ground_status
-
-            # Notify user if noise source is to be changed for test case.
-            if test.controls.noise_status != current_noise_status:
-                self.toggle_pause()
-                if len(test.controls.noise_status) != 0:
-                    self.ui.dialog_to_continue("Please set noise source to " + test.controls.noise_status + ".")
-                else: #noise_status is empty
-                    self.ui.dialog_to_continue("Please disconnect noise source.")
-                self.breakpoint()
-                current_noise_status = test.controls.noise_status
-
-            # Sending image to dut
-            try:
-                self.send_image(test.controls.display_background)
-            except:
-                self.html_color("Sending image to DUT failed", color="red")
-                logger.warning("Setting test display background to indicate error")
-                test.controls.display_background = test.controls.display_background + " (FAILED)"
 
             # Set default robot speed before running test case. Previous test may have changed current robot speed.
             self.set_robot_default_speed()
@@ -386,8 +351,8 @@ class Context:
 
             configured_tests = set_controls(self.tests_node.children, test_configurations)
             configured_tests.sort(
-                key=lambda test: (test.controls.ground_status, test.controls.noise_status, test.controls.finger_name,
-                                  test.controls.display_background))
+                key=lambda test: [getattr(test.controls, control, "") for control in
+                                  ["ground_status", "noise_status", "finger_name", "display_background"]])
 
         return configured_tests
 
