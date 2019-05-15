@@ -264,10 +264,6 @@ class Context:
         if not self.is_valid(executable_tests):
             return
 
-        # Make sure there is no tip in the separated finger. Keep track of tip in finger 2.
-        self.robot.detach_tip(1)
-        current_finger2_tip = None
-
         test_count = 0
 
         # Make sure that initial noise and grounding states match what is assumed by code.
@@ -284,17 +280,10 @@ class Context:
             self.tips_node.set_active_tip_by_name(test.controls.finger_name)
 
             # If test case defines control for finger 2, change tip accordingly. Otherwise remove tip from finger 2.
-            if hasattr(test.controls, "finger2_name"):
-                if test.controls.finger2_name != current_finger2_tip:
-                    if len(test.controls.finger2_name) > 0:
-                        self.robot.change_tip(test.controls.finger2_name, 1)
-                        current_finger2_tip = test.controls.finger2_name
-                    else:
-                        self.robot.detach_tip(1)
-                        current_finger2_tip = None
+            if hasattr(test.controls, "finger2_name") and len(test.controls.finger2_name) > 0:
+                self.robot.change_tip(test.controls.finger2_name, 1)
             else:
                 self.robot.detach_tip(1)
-                current_finger2_tip = None
 
             # Jump over DUT without specific jump height to avoid problems in case tip was changed.
             active_dut = self.get_active_dut()
