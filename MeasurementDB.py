@@ -139,7 +139,8 @@ class ResultDatabase:
             session.add( TestType( 14, 'Separation Test'))
             session.add( TestType( 15, 'Grid Accuracy Test'))
             session.add( TestType( 16, 'Stationary Jitter Static Noise Test'))
-            session.add(TestType(17, 'One Finger Tapping Repeatability Test'))
+            session.add( TestType( 17, 'One Finger Tapping Repeatability Test'))
+            session.add( TestType( 18, 'Finger Tracking Test'))
             session.commit()
             session.close()
         except:
