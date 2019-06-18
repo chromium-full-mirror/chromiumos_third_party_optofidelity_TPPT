@@ -1249,6 +1249,27 @@ def create_nmm_horizontal_lines_rectangle(dut, spacing, border_width=0):
     return retval
 
 
+def create_center_to_edge_lines(dut, border_width):
+    """
+    Create lines from the center to past each edge
+    :param dut: tnt_dut object
+    :param border_width: distance from edge to stop (mm)
+    :return: List of Container.Lines
+    """
+    retval = []
+
+    w_ = dut.width
+    h_ = dut.height
+    center_x = w_ / 2.0
+    center_y = h_ / 2.0
+    retval.append(Containers.Line(center_x, center_y, 0, border_width, center_y, 0))
+    retval.append(Containers.Line(center_x, center_y, 0, w_ - border_width, center_y, 0))
+    retval.append(Containers.Line(center_x, center_y, 0, center_x, border_width, 0))
+    retval.append(Containers.Line(center_x, center_y, 0, center_x, h_ - border_width, 0))
+
+    return retval
+
+
 def create_center_points(dut, number_of_points, border_width):
     """
     Checks which function should be used for creating random center points

@@ -312,6 +312,9 @@ class TestConfiguration(ConfigurationDatabase.TestConfigBase):
     _finger_tracking_configurations = \
         relationship('FingerTrackingTestParameters', back_populates='_test_configuration_orm')
 
+    _finger_to_edge_configurations = \
+        relationship('FingerToEdgeTestParameters', back_populates='_test_configuration_orm')
+
     __table_args__ = (UniqueConstraint('name', 'configuration_group', name='_name_group_uc'),)
 
 
