@@ -315,6 +315,9 @@ class TestConfiguration(ConfigurationDatabase.TestConfigBase):
     _finger_to_edge_configurations = \
         relationship('FingerToEdgeTestParameters', back_populates='_test_configuration_orm')
 
+    _swipe_configurations = \
+        relationship('SwipeTestParameters', back_populates='_test_configuration_orm')
+
     __table_args__ = (UniqueConstraint('name', 'configuration_group', name='_name_group_uc'),)
 
 

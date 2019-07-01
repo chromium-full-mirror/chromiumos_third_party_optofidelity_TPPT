@@ -142,6 +142,7 @@ class ResultDatabase:
             session.add( TestType( 17, 'One Finger Tapping Repeatability Test'))
             session.add( TestType( 18, 'Finger Tracking Test'))
             session.add( TestType( 19, 'Finger To Edge Test'))
+            session.add( TestType( 20, 'Swipe Test'))
             session.commit()
             session.close()
         except:
