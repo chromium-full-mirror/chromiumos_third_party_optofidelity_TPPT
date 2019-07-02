@@ -101,4 +101,21 @@ class Line(TestAction):
         return math.sqrt((self.start_x - self.end_x)**2 + (self.start_y - self.end_y)**2)
 
 
+class Pinch(TestAction):
+    """
+    Container class representing a single pinch centered at a point for tests
+    """
+
+    def __init__(self, center_x, center_y, start_separation, end_separation, azimuth):
+        self.center_x = center_x
+        self.center_y = center_y
+        self.start_separation = start_separation
+        self.end_separation = end_separation
+        self.azimuth = azimuth
+
+    def __repr__(self):
+        return "%s(%s) [center_x:%s; center_y:%s; start_separation:%s; end_separation:%s; azimuth:%s]" % (
+            self.__class__.__name__, hex(id(self)), self.center_x, self.center_y, self.start_separation,
+            self.end_separation, self.azimuth)
+
 
