@@ -1,0 +1,13 @@
+duts:
+  Dut1:
+    width: 60
+    height: 125
+tips:
+  tip1:
+    model: Standard
+  multi5:
+    model: Multifinger
+    num_tips: 5
+    tip_distance: 12
+    first_finger_offset: 24
+    separation: 48

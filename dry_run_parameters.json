@@ -1,0 +1,148 @@
+{	
+	"test_parameters": {
+			"nodes": {
+					"Duts": {
+							"children": {
+									"Dut1": {
+											"children": {},
+											"controls": {
+													"adb_event_id": "event2",
+													"driver": "TCP socket",
+													"dut_resolution": [
+															1080,
+															2160
+													],
+													"fetch_resolution": "False",
+													"flip_x": "False",
+													"flip_x_and_y": "False",
+													"flip_y": "False",
+													"offset": [
+															0,
+															0
+													],
+													"pit_driver": "PIT_Atmel_mxt.py",
+													"pit_slot": 0
+											},
+											"enabled": 1
+									}
+							},
+							"controls": {},
+							"enabled": true
+					},
+					"Settings": {
+							"children": {},
+							"controls": {
+									"default_acceleration": 200.0,
+									"default_speed": 200.0,
+									"grid_spacing": 2.0,
+									"line_drawing_speed": 100.0
+							},
+							"enabled": true
+					},
+					"Tests": {
+							"children": {
+									"Grid Accuracy": {
+											"children": {},
+											"controls": {
+													"border_width": 4.0,
+													"contact_duration": 100.0,
+													"display_background": "",
+													"finger_name": "tip1",
+													"finger_size": 10.0,
+													"finger_type": "metal",
+													"ground_status": "ground",
+													"lift_off_distance": 10.0,
+													"noise_status": "",
+													"step_size": 20.0,
+													"touch_area": "center_area"
+											},
+											"enabled": 1
+									},
+									"Linearity": {
+											"children": {},
+											"controls": {
+													"border_width": 4.0,
+													"display_background": "",
+													"finger_name": "tip1",
+													"finger_size": 10.0,
+													"finger_type": "metal",
+													"ground_status": "",
+													"lift_off_distance": 10.0,
+													"noise_status": "",
+													"step_size": 10.0,
+													"swipe_direction": "horizontal",
+													"swipe_speed": 50.0,
+													"test_type": "default_linearity",
+													"touch_area": "center_area"
+											},
+											"enabled": 0
+									},
+									"Stationary Jitter Static Noise": {
+											"children": {},
+											"controls": {
+													"border_width": 4.0,
+													"contact_duration": 1000.0,
+													"display_background": "",
+													"finger2_name": "",
+													"finger_name": "tip1",
+													"finger_size": 10.0,
+													"finger_type": "metal",
+													"ground_status": "",
+													"lift_off_distance": 10.0,
+													"noise_status": "",
+													"separation": 20.0,
+													"step_size": 10.0,
+													"test_type": "default_stationary_jitter",
+													"touch_area": "center_area"
+											},
+											"enabled": 0
+									},
+									"Tapping repeatability": {
+											"children": {},
+											"controls": {
+													"border_width": 4.0,
+													"display_background": "",
+													"finger_name": "tip1",
+													"finger_size": 10.0,
+													"finger_type": "metal",
+													"ground_status": "",
+													"lift_off_distance": 10.0,
+													"noise_status": "",
+													"number_of_random_locations_center": 5,
+													"number_of_random_locations_corner": 0,
+													"number_of_random_locations_edge": 0,
+													"number_of_taps_at_each_location": 5,
+													"touch_area": "center_area"
+											},
+											"enabled": 0
+									}
+							},
+							"controls": {},
+							"enabled": true
+					}
+			},
+			"parameters": {
+					"Manufacturer": {
+							"value": ""
+					},
+					"Notes": {
+							"value": ""
+					},
+					"Operator": {
+							"value": ""
+					},
+					"Program": {
+							"value": ""
+					},
+					"Serial": {
+							"value": ""
+					},
+					"Station ID": {
+							"value": ""
+					},
+					"Version": {
+							"value": ""
+					}
+			}
+	}
+}

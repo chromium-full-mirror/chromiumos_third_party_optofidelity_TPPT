@@ -1,0 +1,9 @@
+# Configuration file for test parameter SQL database
+database_enabled: True
+# database_enabled: False
+database_engine: mysql+pymysql
+host_name: 35.226.32.149
+port: 3306
+user_name: test
+password: test
+database: test
