@@ -1,0 +1,6 @@
+#Generated files
+__pycache__
+*.sqlite
+history.json
+config.json
+/venv
