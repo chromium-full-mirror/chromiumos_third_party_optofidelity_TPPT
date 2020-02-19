@@ -269,14 +269,7 @@ class Context:
         self.breakpoint()
 
         for test in executable_tests:
-            # Change active tip. Test object must have "finger_name" control.
-            self.tips_node.set_active_tip_by_name(test.controls.finger_name)
-
-            # If test case defines control for finger 2, change tip accordingly. Otherwise remove tip from finger 2.
-            if hasattr(test.controls, "finger2_name") and len(test.controls.finger2_name) > 0:
-                self.robot.change_tip(test.controls.finger2_name, 1)
-            else:
-                self.robot.detach_tip(1)
+            self.select_tips(test)
 
             # Jump over DUT without specific jump height to avoid problems in case tip was changed.
             active_dut = self.get_active_dut()
@@ -293,6 +286,33 @@ class Context:
 
             # Run test case.
             test.execute()
+
+    def select_tips_by_name(self, test):
+        """
+        Select tips for the test. Test object must have the "finger_name" control, Second finger is
+        selected with the "finger2_name" control.
+        :param test: Active test object
+        """
+        self.tips_node.set_active_tip_by_name(test.controls.finger_name)
+        if hasattr(test.controls, "finger2_name") and len(test.controls.finger2_name) > 0:
+            self.robot.change_tip(test.controls.finger2_name, 1)
+        else:
+            self.robot.detach_tip(1)
+
+    def select_tips(self, test):
+        """
+        Select tips for the test. Test object must either have the "finger_name" control,
+        or the "finger_size" control. Second finger is selected with the "finger2_name" control
+        or the "num_fingers" control.
+        If the object doesn't have those parameters, no exception is raised and the test is allowed
+        to select its own tips.
+        :param test: Active test object
+        """
+        if hasattr(test.controls, "finger_name") and len(test.controls.finger_name) > 0:
+            self.select_tips_by_name(test)
+        elif hasattr(test.controls, "finger_size"):
+            num_fingers = getattr(test.controls, "num_fingers", 1)
+            self.tips_node.select_tips_by_size(test.controls.finger_size, num_fingers)
 
     def is_valid(self, tests):
         """
@@ -352,7 +372,9 @@ class Context:
             configured_tests = set_controls(self.tests_node.children, test_configurations)
             configured_tests.sort(
                 key=lambda test: [getattr(test.controls, control, "") for control in
-                                  ["ground_status", "noise_status", "finger_name", "display_background"]])
+                                  ["ground_status", "noise_status",
+                                   "finger_name", "finger2_name", "finger_size", "num_fingers",
+                                   "display_background"]])
 
         return configured_tests
 
