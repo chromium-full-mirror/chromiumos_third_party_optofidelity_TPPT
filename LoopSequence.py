@@ -328,9 +328,7 @@ class Context:
         for test in tests:
             # Going through all the tests that are going to be run
             if not test.tip_is_valid():
-                tip_name = test.controls.finger_name
-                tip_error_str = 'Tip {tip_name} is not found for {test_name} test'.format(tip_name=tip_name,
-                                                                                      test_name=test.name)
+                tip_error_str = 'Valid tips not found for {test_name} test'.format(test_name=test.name)
                 self.html_error(tip_error_str)
                 tests_valid = False
             if not test.pattern_is_valid():

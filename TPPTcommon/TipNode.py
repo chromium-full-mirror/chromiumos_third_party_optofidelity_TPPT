@@ -104,42 +104,49 @@ class TipsNode(Node):
     def set_active_tip_by_name(self, tip_name):
         self.set_active_tip(self.get_child(tip_name))
 
-    def _select_multi_finger_tip_by_size(self, finger_size, num_fingers):
+    def _select_multi_finger_tip_by_size(self, finger_size, num_fingers, check_only):
         """
         Select a multi-finger tip matching the parameters.
+        If check_only is True, don't actually select tips, but still raise exceptions as normal.
         """
         matching_tips = self.multi_tips_by_count[num_fingers]
         for tip_node in matching_tips:
             if tip_node.tnt_tip.diameter == finger_size:
-                self.set_active_tip(tip_node)
+                if not check_only:
+                    self.set_active_tip(tip_node)
                 return
 
         raise Exception("Tip not found with the correct diameter (%s) and finger count (%s)" %
                         (finger_size, num_fingers))
 
-    def _select_single_finger_tips_by_size(self, finger_size, num_fingers):
+    def _select_single_finger_tips_by_size(self, finger_size, num_fingers, check_only):
         """
         Select single-finger tips matching the parameters. num_fingers should be 1 or 2.
+        If check_only is True, don't actually select tips, but still raise exceptions as normal.
         """
         matching_tips = self.single_tips_by_size[finger_size]
-        self.set_active_tip(matching_tips[0])
+        if not check_only:
+            self.set_active_tip(matching_tips[0])
         if num_fingers == 2:
             if len(matching_tips) < 2:
                 raise Exception("Not enough tips of the correct size")
-            self.context.robot.change_tip(matching_tips[1].name, 1)
+            if not check_only:
+                self.context.robot.change_tip(matching_tips[1].name, 1)
         elif num_fingers == 1:
-            self.context.robot.detach_tip(1)
+            if not check_only:
+                self.context.robot.detach_tip(1)
         else:
             raise ValueError("Number of fingers must be 1 or 2")
 
-    def select_tips_by_size(self, finger_size, num_fingers):
+    def select_tips_by_size(self, finger_size, num_fingers, check_only=False):
         """
         Select tips matching the parameters.
+        If check_only is True, don't actually select tips, but still raise exceptions as normal.
         """
         if num_fingers >= 3:
-            self._select_multi_finger_tip_by_size(finger_size, num_fingers)
+            self._select_multi_finger_tip_by_size(finger_size, num_fingers, check_only)
         elif num_fingers >= 1:
-            self._select_single_finger_tips_by_size(finger_size, num_fingers)
+            self._select_single_finger_tips_by_size(finger_size, num_fingers, check_only)
         else:
             raise ValueError("Number of fingers must be set and positive")
 
