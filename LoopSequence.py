@@ -642,6 +642,24 @@ class Context:
             self.ui.script_failed(str(e))
             #self.dialog("Active grid calculation failed!\n It seems that the grid value is too big.\nPlease try again with different grid value (e.g. 2.0)")
 
+    def get_min_separation(self, tip1_size, tip2_size=None):
+        """
+        Calculates the minimum viable finger separation if tips with given size were attached
+        :param tip1_size: Diameter of first tip (mm)
+        :param tip2_size: Diameter of second tip (mm).  If None, assume the same as tip1
+        :return: The smallest viable finger separation (mm)
+        """
+        min_clearance = 1.0
+
+        if tip2_size is None:
+            tip2_size = tip1_size
+        separation = (tip1_size + tip2_size) / 2.0 + min_clearance
+
+        # TODO: Poll the robot for minimum separation
+        min_robot_separation = 10.5
+
+        return max(separation, min_robot_separation)
+
     def get_active_dut(self):
         """
         :return: The active DUT.
