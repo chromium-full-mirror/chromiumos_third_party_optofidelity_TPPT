@@ -21,6 +21,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 from .Node import *
 from collections import defaultdict
+from TPPTcommon.exceptions import TipSelectionError
 
 class TipNode(Node):
     """
@@ -116,8 +117,8 @@ class TipsNode(Node):
                     self.set_active_tip(tip_node)
                 return
 
-        raise Exception("Tip not found with the correct diameter (%s) and finger count (%s)" %
-                        (finger_size, num_fingers))
+        raise TipSelectionError("Tip not found with the correct diameter (%s) and finger count (%s)" %
+                                (finger_size, num_fingers))
 
     def _select_single_finger_tips_by_size(self, finger_size, num_fingers, check_only):
         """
@@ -129,14 +130,14 @@ class TipsNode(Node):
             self.set_active_tip(matching_tips[0])
         if num_fingers == 2:
             if len(matching_tips) < 2:
-                raise Exception("Not enough tips of the correct size")
+                raise TipSelectionError("Not enough tips of the correct size")
             if not check_only:
                 self.context.robot.change_tip(matching_tips[1].name, 1)
         elif num_fingers == 1:
             if not check_only:
                 self.context.robot.detach_tip(1)
         else:
-            raise ValueError("Number of fingers must be 1 or 2")
+            raise TipSelectionError("Number of fingers must be 1 or 2")
 
     def select_tips_by_size(self, finger_size, num_fingers, check_only=False):
         """
@@ -148,7 +149,7 @@ class TipsNode(Node):
         elif num_fingers >= 1:
             self._select_single_finger_tips_by_size(finger_size, num_fingers, check_only)
         else:
-            raise ValueError("Number of fingers must be set and positive")
+            raise TipSelectionError("Number of fingers must be set and positive")
 
     def check_tips(self):
         """

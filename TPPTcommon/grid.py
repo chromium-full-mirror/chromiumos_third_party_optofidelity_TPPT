@@ -36,6 +36,7 @@ from matplotlib.figure import Figure
 
 try: import TPPTcommon.containers as Containers
 except: import containers as Containers
+from TPPTcommon.exceptions import GridCreationError
 
 def line_coord_of_closest_rectangle_intersection(min_x, max_x, start_x, dir_x):
     """
@@ -224,7 +225,7 @@ def is_point_in_area(point, area, dut, border_width):
         # However, this is separated from 'edge_area' to add clarity to code in other parts
         return is_point_in_dut and not is_point_in_center
     else:
-        raise Exception("{} is not allowed measurement area".format(area))
+        raise GridCreationError("{} is not allowed measurement area".format(area))
 
 
 def azimuth_direction(azimuth_angle):
@@ -705,7 +706,7 @@ def create_point_nmm_grid_scaled(dut, step, direction="vertical"):
                 point = Containers.Point(x_ * w_real_step, y_ * h_real_step, 0)
                 retval.append(point)
     else:
-        raise Exception("Invalid grid direction")
+        raise GridCreationError("Invalid grid direction")
 
     return retval
 
@@ -753,7 +754,7 @@ def create_grid_accuracy_grid_svg(dut, step_size, area, border_width):
                 edge_points.append(point)
         touch_points = edge_points
     else:
-        raise Exception('Invalid touch area: {}'.format(area))
+        raise GridCreationError('Invalid touch area: {}'.format(area))
     # Create Containers.Point objects from the coordinate list
     final_points = []
     for point in touch_points:
@@ -846,11 +847,11 @@ def create_multi_swipe_horizontal(dut, num_of_fingers, finger_distance, border_w
             if len(clipped_lines) > 0:
                 return [clipped_lines[0]]
             else:
-                raise Exception("Multifinger width greater than DUT width (-borders), cannot do vertical swipe")
+                raise GridCreationError("Multifinger width greater than DUT width (-borders), cannot do vertical swipe")
         else:  # dut can be assumed to be rectangle
             return line_list
     else:
-        raise Exception("Multifinger width greater than DUT height (-borders), cannot do horizontal swipe")
+        raise GridCreationError("Multifinger width greater than DUT height (-borders), cannot do horizontal swipe")
 
 
 def create_multi_swipe_vertical(dut, num_of_fingers, finger_distance, border_width):
@@ -883,11 +884,11 @@ def create_multi_swipe_vertical(dut, num_of_fingers, finger_distance, border_wid
             if len(clipped_lines) > 0:
                 return [clipped_lines[0]]
             else:
-                raise Exception("Multifinger width greater than DUT width (-borders), cannot do vertical swipe")
+                raise GridCreationError("Multifinger width greater than DUT width (-borders), cannot do vertical swipe")
         else: # dut can be assumed to be rectangle
             return line_list
     else:
-        raise Exception("Multifinger width greater than DUT width (-borders), cannot do vertical swipe")
+        raise GridCreationError("Multifinger width greater than DUT width (-borders), cannot do vertical swipe")
     pass
 
 
@@ -950,7 +951,7 @@ def create_multi_swipe_diagonal(dut, num_of_fingers, finger_distance, border_wid
             if len(clipped_lines) > 0:
                 line_first = clipped_lines[0]
             else:
-                raise Exception(
+                raise GridCreationError(
                     "Multifinger width greater than DUT diagonal width (-borders), cannot do diagonal swipe")
         else:
             clip_line_to_rectangle(line_first, dut_width, dut_height, border_width)
@@ -972,7 +973,7 @@ def create_multi_swipe_diagonal(dut, num_of_fingers, finger_distance, border_wid
             if len(clipped_lines) > 0:
                 line_last = clipped_lines[0]
             else:
-                raise Exception(
+                raise GridCreationError(
                     "Multifinger width greater than DUT diagonal width (-borders), cannot do diagonal swipe")
         else:
             clip_line_to_rectangle(line_last, dut_width, dut_height, border_width)
@@ -989,7 +990,7 @@ def create_multi_swipe_diagonal(dut, num_of_fingers, finger_distance, border_wid
         # Checking if the resulting line is long enough
         line_length = line_first.length()
         if line_length <= MIN_SWIPE_LENGTH:
-            raise Exception("Multifinger width greater than DUT diagonal width (-borders), cannot do diagonal swipe")
+            raise GridCreationError("Multifinger width greater than DUT diagonal width (-borders), cannot do diagonal swipe")
 
         lines.append(line_first)
 
@@ -1018,7 +1019,7 @@ def create_multi_finger_tap_grid(dut, num_fingers, finger_dist):
     # Checking if diagonal tap can be don assuming the dut is rectangle, the non-rectangle
     # case will be checked after we have value for the cornermost point
     if dut_diagonal < tool_size: # diagonal always has the greatest value
-        raise Exception("Multifinger width greater than DUT diagonal, cannot do multifinger tap test")
+        raise GridCreationError("Multifinger width greater than DUT diagonal, cannot do multifinger tap test")
     else:
         # We'll do diagonal tap in every case and it'll be done on both diagonals
         for start_corner in ('top_left', 'top_right'):
@@ -1042,7 +1043,7 @@ def create_multi_finger_tap_grid(dut, num_fingers, finger_dist):
             # At this point we check if diagonal tap is ok for non-rectangle dut
             if len(dut.svg_data()) > 0:
                 if not is_point_in_area(point, 'center_area', dut, border_width=0):
-                    raise Exception("Multifinger width greater than DUT diagonal, cannot do multifinger tap test")
+                    raise GridCreationError("Multifinger width greater than DUT diagonal, cannot do multifinger tap test")
             taps.append(point)
         # Then we check the vertical, this is the same for non-rectangle dut (corners rounded)
         if tool_size <= dut_height:
