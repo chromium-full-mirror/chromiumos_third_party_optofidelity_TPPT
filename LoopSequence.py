@@ -629,8 +629,9 @@ class Context:
 
                     if i_name not in grids: grids[i_name] = []
 
-                    if hasattr(i, 'visualize_grid'):
-                        grids[i_name].append(i.visualize_grid(j.tnt_dut))
+                    grid = i.visualize_grid(j.tnt_dut)
+                    if grid is not None:
+                        grids[i_name].append(grid)
 
             plotter = GridVisualizer()
             plotter.AddGridList(grids)

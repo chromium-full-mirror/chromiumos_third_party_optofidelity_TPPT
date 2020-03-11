@@ -19,14 +19,18 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
+from abc import ABC, abstractmethod
 import decimal
 from copy import copy, deepcopy
 from TPPTcommon.Node import Node
 from TPPTcommon.ConfigurationDatabase import TestConfiguration, ConfigurationDatabase, TestConfigurationGroup
 
 
-class TestStep(Node):
+class TestStep(Node, ABC):
     def __init__(self, name):
+        """
+        Executed when script is loaded, child classes should define the test case controls for GUI.
+        """
         super().__init__(name)
         self.display_enabled = True
         self.enabled = False
@@ -96,6 +100,36 @@ class TestStep(Node):
             .one_or_none()
 
         return True if existing_configuration is not None else False
+
+    @abstractmethod
+    def execute(self):
+        """
+        Tell the robot to perform each gesture in turn, and record the events from the DUT.
+        """
+        pass
+
+    @abstractmethod
+    def tip_is_valid(self):
+        """
+        Try to find the selected tips.
+        :return: True if tips are found, False if not found
+        """
+        pass
+
+    @abstractmethod
+    def pattern_is_valid(self):
+        """
+        Try to create the measurement grid to see if it is possible
+        :return: True if the grid can be created, False if the grid cannot be created
+        """
+        pass
+
+    def visualize_grid(self, dut):
+        """
+        Construct a visualization of the test case grid. Optional method for test cases.
+        :param dut: DUT where the grid is evaluated on.
+        """
+        return None
 
 
 def set_controls(tests, configurations):
