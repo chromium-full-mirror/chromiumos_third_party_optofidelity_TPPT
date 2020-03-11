@@ -19,7 +19,13 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
+from collections import namedtuple
 from threading import Thread
+
+
+Measurement = namedtuple('Measurement', 'panel_x panel_y pressure finger_id delay time event yaw tilt UNKNOWN')
+Measurement.__new__.__defaults__ = (0.0,) * 3
+
 
 class TapMeasurement():
     '''
@@ -126,16 +132,24 @@ class ContinuousMeasurement():
                 if "OK" in cline_data:
                     for point in range(cline_data.index("OK")):  # Read all data points before "OK"
                         if len(cline_data[point]) > 9:
-                            touchlist.append([cline_data[point][0], cline_data[point][1],
-                                              cline_data[point][2], cline_data[point][3],
-                                              cline_data[point][4], cline_data[point][5],
-                                              cline_data[point][6], cline_data[point][7],
-                                              cline_data[point][8], cline_data[point][9]])
+                            touchlist.append(Measurement(panel_x=cline_data[point][0],
+                                                         panel_y=cline_data[point][1],
+                                                         pressure=cline_data[point][2],
+                                                         finger_id=cline_data[point][3],
+                                                         delay=cline_data[point][4],
+                                                         time=cline_data[point][5],
+                                                         event=cline_data[point][6],
+                                                         yaw=cline_data[point][7],
+                                                         tilt=cline_data[point][8],
+                                                         UNKNOWN=cline_data[point][9]))
                         else:
-                            touchlist.append([cline_data[point][0], cline_data[point][1],
-                                              cline_data[point][2], cline_data[point][3],
-                                              cline_data[point][4], cline_data[point][5],
-                                              cline_data[point][6]])
+                            touchlist.append(Measurement(panel_x=cline_data[point][0],
+                                                         panel_y=cline_data[point][1],
+                                                         pressure=cline_data[point][2],
+                                                         finger_id=cline_data[point][3],
+                                                         delay=cline_data[point][4],
+                                                         time=cline_data[point][5],
+                                                         event=cline_data[point][6]))
         return touchlist
 
     def save_data_to_csv_file(self, line_id, file_path, write_header=False, replace_file=False):
