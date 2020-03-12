@@ -224,7 +224,7 @@ class FingerTracking(TestStep):
 
             db_list.append(results)
 
-            self.context.add_dut_point(float(test_result[0]), float(test_result[1]))
+            self.context.add_dut_point(float(test_result.panel_x), float(test_result.panel_y))
 
         self.context.db.addAll(db_list)
 
@@ -240,4 +240,3 @@ class FingerTrackingTestParameters(ConfigurationDatabase.TestConfigBase):
     finger_size = Column(VARCHAR(40))
     num_fingers = Column(Integer)
     speed = Column(Float)
-
