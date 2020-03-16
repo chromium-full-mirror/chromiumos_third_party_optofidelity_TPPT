@@ -44,6 +44,7 @@ class TestStep(Node, ABC):
         self.database_configuration = None
         self.results_class = None
         self.measurement_timeout = 0.5
+        self.noise_injection_needed = False
 
     def __repr__(self):
         return self.name

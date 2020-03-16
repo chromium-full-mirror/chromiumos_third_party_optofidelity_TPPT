@@ -271,6 +271,8 @@ class Context:
 
         self.breakpoint()
 
+        self.prompt_to_detach_function_generator()
+
         for test in executable_tests:
             self.select_tips(test)
 
@@ -288,7 +290,19 @@ class Context:
                 len(executable_tests)) + ')')
 
             # Run test case.
-            test.execute()
+            try:
+                test.execute()
+            finally:
+                # If noise injector is attached, always make sure it is removed, even if the next test will use it,
+                # as the next test may need to move the azimuth during set up.
+                if test.noise_injection_needed:
+                    self.prompt_to_detach_function_generator()
+
+    def prompt_to_detach_function_generator(self):
+        self.toggle_pause()
+        self.ui.dialog_to_continue("IMPORTANT! Make sure function generator is not attached to robot tip, "
+                                   "and that DUT is not grounded.")
+        self.breakpoint()
 
     def select_tips_by_name(self, test):
         """
