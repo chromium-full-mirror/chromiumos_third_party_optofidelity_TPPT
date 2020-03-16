@@ -24,8 +24,10 @@ import logging
 from abc import ABC, abstractmethod
 from copy import copy, deepcopy
 
+from noise.hp33120a import HP33120A
+from TPPTcommon.containers import Line, Point
 from TPPTcommon.ConfigurationDatabase import TestConfiguration, ConfigurationDatabase, TestConfigurationGroup
-from TPPTcommon.exceptions import GridCreationError
+from TPPTcommon.exceptions import GridCreationError, TipSelectionError
 from TPPTcommon.grid import GridVisContainer
 from TPPTcommon.Node import Node
 
@@ -120,6 +122,8 @@ class TestStep(Node, ABC):
         test_item = self.context.create_db_test_item("%s Test" % self.name)
         gestures = self._create_grid(dut)
 
+        self._initial_setup(dut)
+
         for index, gesture in enumerate(gestures):
             self.context.indicators.set_test_detail('Gesture', str(index + 1) + ' / ' + str(len(gestures)))
 
@@ -139,6 +143,14 @@ class TestStep(Node, ABC):
 
         self.context.close_db_test_item(test_item)
 
+        self._final_cleanup()
+
+    def _initial_setup(self, dut):
+        """
+        Setup to be done one time before any gestures are executed.
+        """
+        pass
+
     @abstractmethod
     def _pre_gesture_setup(self, gesture, dut):
         """
@@ -150,6 +162,12 @@ class TestStep(Node, ABC):
     def _execute_gesture(self, gesture, dut):
         """
         Tell the robot to perform a single gesture.
+        """
+        pass
+
+    def _final_cleanup(self):
+        """
+        Clean up to be done one time after all gestures have been executed.
         """
         pass
 
@@ -249,3 +267,101 @@ def set_controls(tests, configurations):
         tests_with_set_controls.append(controlled_test)
 
     return tests_with_set_controls
+
+
+class NoiseTestStep(TestStep):
+    """
+    Abstract class for tests which use the function generator to inject noise.
+
+    WARNING: All noise tests should only use one finger, and must be careful to leave the robot at azimuth 0 throughout
+    test execution, because rotating the azimuth may cause damage while the function generator is attached.
+
+    For all noise tests, the same gesture is performed repeatedly while a square wave of 10V is applied through the
+    tip with frequencies between 0 and 500,000 Hz in increments of 500 Hz.
+    """
+
+    def __init__(self, name, context):
+        super().__init__(name, context)
+
+        self.noise_injection_needed = True
+
+        sizes = list(map(str, sorted(context.tips_node.single_tips_by_size.keys())))
+
+        self.controls.finger_size = sizes[0] if len(sizes) > 0 else ""
+        self.controls.info['finger_size'] = {'label': 'Finger size (mm)', 'items': sizes}
+
+        self.controls.freq_step = 500
+        self.controls.info['freq_step'] = {'label': 'Noise frequency step (Hz)', 'min': 500}
+
+        self.controls.device_path = 'COM2'
+        self.controls.info['device_path'] = {'label': 'Function generator device path'}
+
+        self.speed = 100.0
+        self.generator = None
+        self.test_gesture = None
+        self.start_point = None
+
+    def _initial_setup(self, dut):
+        self.test_gesture = self._single_gesture_geometry(dut)
+        if isinstance(self.test_gesture, Point):
+            self.start_point = self.test_gesture
+        elif isinstance(self.test_gesture, Line):
+            self.start_point = Point(self.test_gesture.start_x, self.test_gesture.start_y, self.test_gesture.start_z)
+        else:
+            raise ValueError("Unsupported gesture type for Noise test")
+
+        dut.move(self.start_point.x, self.start_point.y, dut.base_distance, azimuth=0)
+
+        self.context.toggle_pause()
+        self.context.ui.dialog_to_continue("Please attach the function generator to the robot tip, make sure DUT is "
+                                           "grounded, and make sure the function generator is on.")
+        self.context.breakpoint()
+
+        self.generator = HP33120A(self.controls.device_path)
+
+    def _pre_gesture_setup(self, frequency, dut):
+        self.context.set_robot_default_speed()
+        dut.move(self.start_point.x, self.start_point.y, dut.base_distance, azimuth=0)
+        self.context.set_robot_speed(self.speed)
+
+        self.generator.generate_function(HP33120A.Waveforms.SQUARE, frequency, 10)
+
+    def _final_cleanup(self):
+        del self.generator
+
+    @abstractmethod
+    def _single_gesture_geometry(self, dut):
+        """
+        Create the shape that defines the gesture that is performed at each frequency.
+        """
+        pass
+
+    def _create_grid(self, dut):
+        """
+        For this test, all gestures performed by the robot are identical, but the frequency of noise supplied by the
+        function generator differs.
+        """
+        return range(self.controls.freq_step, 500001, self.controls.freq_step)
+
+    def visualize_grid(self, dut):
+        test_pattern = [self._single_gesture_geometry(dut)]
+        return GridVisContainer(self.__class__.__name__, (dut.width, dut.height), test_pattern, dut.name)
+
+    def tip_is_valid(self):
+        try:
+            self.context.tips_node.select_tips_by_size(float(self.controls.finger_size), 1, check_only=True)
+            return True
+        except TipSelectionError as e:
+            logger.error(str(e))
+            return False
+
+    def pattern_is_valid(self):
+        dut = self.context.get_active_dut()
+        if len(self._create_grid(dut)) == 0:
+            return False
+        try:
+            _ = self._single_gesture_geometry(dut)
+            return True
+        except GridCreationError as e:
+            logger.error(str(e))
+            return False
