@@ -112,7 +112,7 @@ class TipsNode(Node):
         """
         matching_tips = self.multi_tips_by_count[num_fingers]
         for tip_node in matching_tips:
-            if tip_node.tnt_tip.diameter == finger_size:
+            if tip_node.tnt_tip.diameter == float(finger_size):
                 if not check_only:
                     self.set_active_tip(tip_node)
                 return
