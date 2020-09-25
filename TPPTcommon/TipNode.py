@@ -105,20 +105,28 @@ class TipsNode(Node):
     def set_active_tip_by_name(self, tip_name):
         self.set_active_tip(self.get_child(tip_name))
 
+    def get_multi_finger_tip_node(self, finger_size, num_fingers):
+        """
+        Find and return a multi-finger tip node matching the parameters.
+        If no matching tip is found, return None.
+        """
+        matching_tips = self.multi_tips_by_count[num_fingers]
+        for tip_node in matching_tips:
+            if tip_node.tnt_tip.diameter == float(finger_size):
+                return tip_node
+        return None
+
     def _select_multi_finger_tip_by_size(self, finger_size, num_fingers, check_only):
         """
         Select a multi-finger tip matching the parameters.
         If check_only is True, don't actually select tips, but still raise exceptions as normal.
         """
-        matching_tips = self.multi_tips_by_count[num_fingers]
-        for tip_node in matching_tips:
-            if tip_node.tnt_tip.diameter == float(finger_size):
-                if not check_only:
-                    self.set_active_tip(tip_node)
-                return
-
-        raise TipSelectionError("Tip not found with the correct diameter (%s) and finger count (%s)" %
-                                (finger_size, num_fingers))
+        tip_node = self.get_multi_finger_tip_node(finger_size, num_fingers)
+        if tip_node is None:
+            raise TipSelectionError("Tip not found with the correct diameter (%s) and finger count (%s)" %
+                                    (finger_size, num_fingers))
+        if not check_only:
+            self.set_active_tip(tip_node)
 
     def _select_single_finger_tips_by_size(self, finger_size, num_fingers, check_only):
         """
