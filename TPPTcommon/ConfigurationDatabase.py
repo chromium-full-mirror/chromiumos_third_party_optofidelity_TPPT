@@ -321,6 +321,9 @@ class TestConfiguration(ConfigurationDatabase.TestConfigBase):
     _pinch_configurations = \
         relationship('PinchTestParameters', back_populates='_test_configuration_orm')
 
+    _tap_configurations = \
+        relationship('TapTestParameters', back_populates='_test_configuration_orm')
+
     __table_args__ = (UniqueConstraint('name', 'configuration_group', name='_name_group_uc'),)
 
 
