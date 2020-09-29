@@ -324,6 +324,9 @@ class TestConfiguration(ConfigurationDatabase.TestConfigBase):
     _tap_configurations = \
         relationship('TapTestParameters', back_populates='_test_configuration_orm')
 
+    _repeated_taps_configurations = \
+        relationship('RepeatedTapsTestParameters', back_populates='_test_configuration_orm')
+
     __table_args__ = (UniqueConstraint('name', 'configuration_group', name='_name_group_uc'),)
 
 
