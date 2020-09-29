@@ -1270,6 +1270,26 @@ def create_center_to_edge_lines(dut, border_width):
     return retval
 
 
+def create_center_to_corner_lines(dut, border_width):
+    """
+    Create lines from the center to each corner
+    :param dut: tnt_dut object
+    :param border_width: distance from edge to stop (mm)
+    """
+    retval = []
+
+    w_ = dut.width
+    h_ = dut.height
+    center_x = w_ / 2.0
+    center_y = h_ / 2.0
+    retval.append(Containers.Line(center_x, center_y, 0, border_width, border_width, 0))
+    retval.append(Containers.Line(center_x, center_y, 0, border_width, h_ - border_width, 0))
+    retval.append(Containers.Line(center_x, center_y, 0, w_ - border_width, border_width, 0))
+    retval.append(Containers.Line(center_x, center_y, 0, w_ - border_width, h_ - border_width, 0))
+
+    return retval
+
+
 def create_center_points(dut, number_of_points, border_width):
     """
     Checks which function should be used for creating random center points

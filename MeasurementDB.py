@@ -146,6 +146,7 @@ class ResultDatabase:
             session.add( TestType( 21, 'Pinch Test'))
             session.add( TestType( 22, 'Tap Test'))
             session.add( TestType( 23, 'Repeated Taps Test'))
+            session.add( TestType( 24, 'Stationary Then Move Test'))
             session.commit()
             session.close()
         except:
