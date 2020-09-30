@@ -66,11 +66,11 @@ class TipsNode(Node):
 
         for tip in tips:
             tip_node = TipNode(tip.name, tip)
-            diameter_str = "{:.1f}".format(tip.diameter)
+            rounded_diameter = round(tip.diameter, 1)
             if not tip.is_multifinger:
-                self.single_tips_by_size[diameter_str].append(tip_node)
+                self.single_tips_by_size[rounded_diameter].append(tip_node)
             else:
-                self.multi_tips_by_size[diameter_str].append(tip_node)
+                self.multi_tips_by_size[rounded_diameter].append(tip_node)
                 self.multi_tips_by_count[tip.num_tips].append(tip_node)
 
             self.add_child(tip_node)
@@ -112,7 +112,7 @@ class TipsNode(Node):
         """
         matching_tips = self.multi_tips_by_count[num_fingers]
         for tip_node in matching_tips:
-            if tip_node.tnt_tip.diameter == float(finger_size):
+            if tip_node.tnt_tip.diameter == round(finger_size, 1):
                 return tip_node
         return None
 
@@ -133,7 +133,7 @@ class TipsNode(Node):
         Select single-finger tips matching the parameters. num_fingers should be 1 or 2.
         If check_only is True, don't actually select tips, but still raise exceptions as normal.
         """
-        matching_tips = self.single_tips_by_size[finger_size]
+        matching_tips = self.single_tips_by_size[round(finger_size, 1)]
         if not check_only:
             self.set_active_tip(matching_tips[0])
         if num_fingers == 2:

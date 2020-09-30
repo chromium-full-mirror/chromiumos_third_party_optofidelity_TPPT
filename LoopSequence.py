@@ -312,7 +312,7 @@ class Context:
             self.select_tips_by_name(test)
         elif hasattr(test.controls, "finger_size"):
             num_fingers = getattr(test.controls, "num_fingers", 1)
-            self.tips_node.select_tips_by_size(test.controls.finger_size, num_fingers)
+            self.tips_node.select_tips_by_size(float(test.controls.finger_size), num_fingers)
 
     def is_valid(self, tests):
         """

@@ -90,9 +90,9 @@ class FingerToEdge(TestStep):
         # If database_configuration is defined, the controls parameters will be overridden from database if possible
         self.database_configuration = FingerToEdgeTestParameters
 
-        sizes = sorted(list(context.tips_node.single_tips_by_size.keys()), key=float)
+        sizes = list(map(str, sorted(context.tips_node.single_tips_by_size.keys())))
 
-        self.controls.finger_size = ""
+        self.controls.finger_size = sizes[0] if len(sizes) > 0 else ""
         self.controls.info['finger_size'] = {'label': 'Finger size (mm)', 'items': sizes}
 
         self.speed = 30.0
@@ -150,7 +150,7 @@ class FingerToEdge(TestStep):
 
     def tip_is_valid(self):
         try:
-            self.context.tips_node.select_tips_by_size(self.controls.finger_size, 1, check_only=True)
+            self.context.tips_node.select_tips_by_size(float(self.controls.finger_size), 1, check_only=True)
             return True
         except TipSelectionError as e:
             logger.error(str(e))

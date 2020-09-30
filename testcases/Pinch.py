@@ -88,10 +88,9 @@ class Pinch(TestStep):
         # If database_configuration is defined, the controls parameters will be overridden from database if possible
         self.database_configuration = PinchTestParameters
 
-        sizes = sorted([key for (key, value) in context.tips_node.single_tips_by_size.items() if len(value) >= 2],
-                       key=float)
+        sizes = [str(key) for (key, value) in sorted(context.tips_node.single_tips_by_size.items()) if len(value) >= 2]
 
-        self.controls.finger_size = ""
+        self.controls.finger_size = sizes[0] if len(sizes) > 0 else ""
         self.controls.info['finger_size'] = {'label': 'Finger size (mm)', 'items': sizes}
 
         self.controls.num_fingers = 2
@@ -156,7 +155,7 @@ class Pinch(TestStep):
 
     def tip_is_valid(self):
         try:
-            self.context.tips_node.select_tips_by_size(self.controls.finger_size, 2, check_only=True)
+            self.context.tips_node.select_tips_by_size(float(self.controls.finger_size), 2, check_only=True)
             return True
         except TipSelectionError as e:
             logger.error(str(e))
