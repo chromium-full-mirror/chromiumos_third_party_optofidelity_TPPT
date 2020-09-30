@@ -330,6 +330,9 @@ class TestConfiguration(ConfigurationDatabase.TestConfigBase):
     _stationary_then_move_configurations = \
         relationship('StationaryThenMoveTestParameters', back_populates='_test_configuration_orm')
 
+    _drumroll_configurations = \
+        relationship('DrumrollTestParameters', back_populates='_test_configuration_orm')
+
     __table_args__ = (UniqueConstraint('name', 'configuration_group', name='_name_group_uc'),)
 
 
