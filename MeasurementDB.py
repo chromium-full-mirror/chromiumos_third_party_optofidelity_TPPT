@@ -150,6 +150,7 @@ class ResultDatabase:
             session.add( TestType( 25, 'Drumroll Test'))
             session.add( TestType( 26, 'Compass Test'))
             session.add( TestType( 27, 'Compass With Taps Test'))
+            session.add( TestType( 28, 'Stationary With Taps Test'))
             session.commit()
             session.close()
         except:
