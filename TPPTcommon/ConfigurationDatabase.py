@@ -336,6 +336,9 @@ class TestConfiguration(ConfigurationDatabase.TestConfigBase):
     _compass_configurations = \
         relationship('CompassTestParameters', back_populates='_test_configuration_orm')
 
+    _compass_with_taps_configurations = \
+        relationship('CompassWithTapsTestParameters', back_populates='_test_configuration_orm')
+
     __table_args__ = (UniqueConstraint('name', 'configuration_group', name='_name_group_uc'),)
 
 
