@@ -119,3 +119,22 @@ class Pinch(TestAction):
             self.end_separation, self.azimuth)
 
 
+class Compass(TestAction):
+    """
+    Container class for a single compass motion with one finger motionless and the other moving in an arc around it
+    """
+
+    def __init__(self, center_x, center_y, separation, start_azimuth, end_azimuth):
+        self.center_x = center_x
+        self.center_y = center_y
+        self.separation = separation
+        # An azimuth of zero puts the rotating finger to the right of the stationary finger when looking from the
+        # bottom of the test screen. Azimuth increases counter-clockwise in degrees.
+        self.start_azimuth = start_azimuth
+        self.end_azimuth = end_azimuth
+
+    def __repr__(self):
+        return "%s(%s) [center_x:%s; center_y:%s; separation:%s; start_azimuth:%s; end_azimuth:%s]" % (
+            self.__class__.__name__, hex(id(self)), self.center_x, self.center_y, self.separation,
+            self.start_azimuth, self.end_azimuth)
+
