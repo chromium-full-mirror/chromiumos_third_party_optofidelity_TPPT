@@ -23,6 +23,9 @@ from collections import namedtuple
 from threading import Thread
 
 
+# This is the measurement format sent by the Optofidelity DUT software,
+# defined here:
+# https://chromium.googlesource.com/chromiumos/third_party/optofidelity_chromeos_touch_sender/+/refs/heads/master/OptoFidelity_Touch_Test/chromeos_tester/eventsenders.py
 Measurement = namedtuple('Measurement', 'panel_x panel_y pressure finger_id delay time event yaw tilt UNKNOWN')
 Measurement.__new__.__defaults__ = (0.0,) * 3
 
