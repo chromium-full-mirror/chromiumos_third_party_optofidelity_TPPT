@@ -25,6 +25,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
 import logging
+import json
 import queue
 import select
 import socket
@@ -33,14 +34,66 @@ import os
 import os.path
 import time
 
+from collections import namedtuple, UserList
+from optofidelity_protocols.dut import Axis, DUTConfig
+
 log = logging.getLogger(__name__)
 
-CONNECTION_LIST = []
 PORT = 50007
+
+
+class ClientList(UserList):
+    def sockets(self):
+        """ :return: list of all Clients' corresponding sockets. """
+        return [c.sock for c in self.data]
+
+    def remove_socket(self, sock):
+        """ Remove Clients with the given socket. """
+        self.data = [c for c in self.data if sock is not c.sock]
+
+    def set_config(self, sock, config):
+        """ Set the config of Clients with the given socket. """
+        for client in self.data:
+            if sock is client.sock:
+                client.set_config(config)
+
+    def get_by_client_id(self, client_id):
+        """ :return: list of Clients with matching client_id. """
+        return [c for c in self.data if client_id == c.client_id]
+
+
+class Client(object):
+    def __init__(self, sock):
+        self.sock = sock
+        self.config = None
+
+    @property
+    def client_id(self):
+        """ :return: The client_id, if the config has been set """
+        if self.config is not None:
+            return self.config.client_id
+        return None
+
+    def request_config(self):
+        """ Send request to client for config """
+        self.sock.send("CONFIG".encode("utf-8"))
+
+    def set_config(self, config):
+        """ Set the config for this Client
+
+        :param config: A list containing the config, matching the DUTConfig namedtuple layout,
+        where the first item is the client_id and the remaining items are lists matching
+        the Axis namedtuple.
+        """
+        for i in range(1, len(config)):
+            config[i] = Axis(*config[i])
+        self.config = DUTConfig(*config)
+
 
 class DeviceSocket(threading.Thread):    
 
     def __init__(self):
+        self.clients = ClientList()
         self.queue = queue.Queue()
         self.server_thread = threading.Thread(target=self.server, args =(self.queue,))
         self.server_thread.start()
@@ -54,21 +107,23 @@ class DeviceSocket(threading.Thread):
         self.server_socket.bind(("0.0.0.0", PORT))
         self.server_socket.listen(10)
 
-        # Add server socket to the list of readable connections
-        CONNECTION_LIST.append(self.server_socket)
-        
         input = ""
 
         while True:
             # Get the list sockets which are ready to be read through select
-            read_sockets,write_sockets,error_sockets = select.select(CONNECTION_LIST,[],[])
+            connection_list = self.clients.sockets()
+            connection_list.append(self.server_socket)
+            read_sockets, _, _ = select.select(connection_list, [], [])
 
             for sock in read_sockets:
                 #New connection
                 if sock == self.server_socket:
                     # Handle the case in which there is a new connection received through server_socket
                     sockfd, addr = self.server_socket.accept()
-                    CONNECTION_LIST.append(sockfd)
+                    client = Client(sockfd)
+                    client.request_config()
+                    self.clients.append(client)
+
                     log.debug("Client ({}, {}) connected".format(addr[0], addr[1]))
 
                     #self.broadcast_data(sockfd, "[%s:%s] entered room\n" % addr)
@@ -92,7 +147,7 @@ class DeviceSocket(threading.Thread):
                         # input must have at least 'length' characters
                         while len(input) < length:
                             input += sock.recv(length).decode("utf-8")
-                        
+
                         # store extra characters if any, cut input to length
                         restInput = input[length:]
                         input = input[:length]
@@ -103,6 +158,9 @@ class DeviceSocket(threading.Thread):
                             response = "RESP " + resp
                             sock.send("0021".encode("utf-8"))
                             sock.send(response.encode("utf-8"))
+                        elif input.startswith("CONFIG "):
+                            config = json.loads(input[7:])
+                            self.clients.set_config(sock, config)
                         else:
                             results = eval(input)
                             #log.debug("Put touch event to queue: {}".format(results))
@@ -116,23 +174,38 @@ class DeviceSocket(threading.Thread):
                         #self.broadcast_data(sock, "Client (%s, %s) is offline" % addr)
                         log.debug("Client ({}, {}) is offline".format(addr[0], addr[1]))
                         sock.close()
-                        CONNECTION_LIST.remove(sock)
+                        self.clients.remove_socket(sock)
                         continue
 
         server_socket.close()
+
+    def get_config_by_client_id(self, client_id):
+        """ Get the configuration associated with the Client with the given client_id.
+
+        Raise a ValueError if there are no matches, or multiple matches.
+        """
+        matches = self.clients.get_by_client_id(client_id)
+        if len(matches) == 0:
+            raise ValueError("No DUT found with client ID %d" % client_id)
+        if len(matches) > 1:
+            raise ValueError("%d DUTs found with client ID %d. Try again after disconnecting DUTs with duplicate "
+                             "client IDs" % (len(matches), client_id))
+        return matches[0].config
+
     def close_server(self):
         self.server_thread.join()
 
     def broadcast_data(self,sock, message):
         #Do not send the message to master socket and the client who has send us the message
-        for socket in CONNECTION_LIST:
-            if socket != self.server_socket and socket != sock :
+        for client in self.clients:
+            if client.sock != sock :
                 try :
-                    socket.send(message.encode("utf-8"))
+                    client.sock.send(message.encode("utf-8"))
                 except :
                     # broken socket connection may be, chat client pressed ctrl+c for example
-                    socket.close()
-                    CONNECTION_LIST.remove(socket)
+                    client.sock.close()
+                    self.clients.remove(client)
+
     def handle_queue(self):
             while not self.queue.empty():
                 result = self.queue.get()
