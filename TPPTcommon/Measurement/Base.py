@@ -19,15 +19,8 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
-from collections import namedtuple
+from optofidelity_protocols.dut import Measurement
 from threading import Thread
-
-
-# This is the measurement format sent by the Optofidelity DUT software,
-# defined here:
-# https://chromium.googlesource.com/chromiumos/third_party/optofidelity_chromeos_touch_sender/+/refs/heads/master/OptoFidelity_Touch_Test/chromeos_tester/eventsenders.py
-Measurement = namedtuple('Measurement', 'panel_x panel_y pressure finger_id delay time event yaw tilt UNKNOWN')
-Measurement.__new__.__defaults__ = (0.0,) * 3
 
 
 class TapMeasurement():
