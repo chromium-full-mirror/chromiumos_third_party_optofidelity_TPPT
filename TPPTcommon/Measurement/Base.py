@@ -127,25 +127,7 @@ class ContinuousMeasurement():
             for cline_data in results:
                 if "OK" in cline_data:
                     for point in range(cline_data.index("OK")):  # Read all data points before "OK"
-                        if len(cline_data[point]) > 9:
-                            touchlist.append(Measurement(panel_x=cline_data[point][0],
-                                                         panel_y=cline_data[point][1],
-                                                         pressure=cline_data[point][2],
-                                                         finger_id=cline_data[point][3],
-                                                         delay=cline_data[point][4],
-                                                         time=cline_data[point][5],
-                                                         event=cline_data[point][6],
-                                                         yaw=cline_data[point][7],
-                                                         tilt=cline_data[point][8],
-                                                         UNKNOWN=cline_data[point][9]))
-                        else:
-                            touchlist.append(Measurement(panel_x=cline_data[point][0],
-                                                         panel_y=cline_data[point][1],
-                                                         pressure=cline_data[point][2],
-                                                         finger_id=cline_data[point][3],
-                                                         delay=cline_data[point][4],
-                                                         time=cline_data[point][5],
-                                                         event=cline_data[point][6]))
+                        touchlist.append(Measurement(*cline_data[point]))
         return touchlist
 
     def save_data_to_csv_file(self, line_id, file_path, write_header=False, replace_file=False):

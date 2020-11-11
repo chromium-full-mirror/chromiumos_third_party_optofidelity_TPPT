@@ -162,7 +162,7 @@ class DeviceSocket(threading.Thread):
                             config = json.loads(input[7:])
                             self.clients.set_config(sock, config)
                         else:
-                            results = eval(input)
+                            results = json.loads(input)
                             #log.debug("Put touch event to queue: {}".format(results))
                             queue.put(results)
 
