@@ -196,7 +196,7 @@ class DeviceSocket(threading.Thread):
         self.server_thread.join()
 
     def broadcast_data(self,sock, message):
-        #Do not send the message to master socket and the client who has send us the message
+        # Do not send the message to the main socket or the client who has sent us the message.
         for client in self.clients:
             if client.sock != sock :
                 try :
