@@ -40,23 +40,16 @@ class DutNode(Node):
 
         self.display_enabled = True
 
-        self.controls.driver = 'Adb'
-        self.controls.info['driver'] = {'label': 'Driver', 'items': ['Adb', 'TCP socket', 'PIT', 'Dummy']}
+        self.config = None
 
-        self.controls.adb_event_id = 'event2'
-        self.controls.info['adb_event_id'] = {'label':'Adb event'}
+        # TODO (seobrien): If we decide to support drivers besides TCP socket, these should be added as controls
+        self.driver = 'TCP socket'
+        self.adb_event_id = 'event2'
+        self.pit_driver = pit_drivers[0]
+        self.pit_slot = 0
 
-        self.controls.pit_driver = pit_drivers[0]
-        self.controls.info['pit_driver'] = {'label': 'PIT driver', 'items': pit_drivers}
-
-        self.controls.pit_slot = 0
-        self.controls.info['pit_slot'] = {'label': 'PIT slot', 'items': [1,2,3,4,5,6,7,8]}
-
-        self.controls.fetch_resolution = True
-        self.controls.info['fetch_resolution'] = {'label': 'Fetch device resolution automatically'}
-
-        self.controls.dut_resolution = [800, 600]
-        self.controls.info['dut_resolution'] = {'label': 'DUT resolution [x;y, p.c.]', "type": "double_number", "min": 1, "step": 1}
+        self.controls.client_id = 0
+        self.controls.info['client_id'] = {'label': 'Client ID'}
 
         self.controls.offset = [0, 0]
         self.controls.info['offset'] = {'label': 'DUT offset [x;y, mm]', "type": "double_number", "step": 1}
@@ -72,7 +65,9 @@ class DutNode(Node):
 
     @property
     def resolution(self):
-        return self.controls.dut_resolution
+        if self.config is None:
+            raise ValueError("DUT configuration is not set.")
+        return [self.config.x.max, self.config.y.max]
 
     @property
     def pit_index(self):
@@ -80,7 +75,7 @@ class DutNode(Node):
         Get index for PIT. This is PIT slot - 1.
         :return:
         """
-        return self.controls.pit_slot - 1
+        return self.pit_slot - 1
 
 class DutsNode(Node):
     """
@@ -136,7 +131,7 @@ class DutsNode(Node):
         # Set active DUT state.
         self.active_dut = dut
 
-        if dut_node.controls.driver[:3] == "PIT":
+        if dut_node.driver[:3] == "PIT":
             self.context.initialize_pit()
 
         res = dut_node.resolution
@@ -157,4 +152,4 @@ class DutsNode(Node):
 
     @property
     def active_driver(self):
-        return self.active_dut_node.controls.driver
+        return self.active_dut_node.driver

@@ -426,32 +426,17 @@ class Context:
 
             dut = dut_node.tnt_dut
 
+            if dut_node.driver == "TCP socket":
+                dut_node.config = self.dsock.get_config_by_client_id(dut_node.controls.client_id)
+            else:
+                raise NotImplementedError("%s driver is not supported." % self.get_active_dut_driver())
 
-            # Try to fetch device resolution automatically if enabled in DUT settings.
-            # Does not work with Dummy driver
-            if dut_node.controls.fetch_resolution:
-                try:
-                    dut_info = dut.info()
-                    display_width = int(dut_info['display_resolution']['width'])
-                    display_height = int(dut_info['display_resolution']['height'])
-                    # Saving the resolution to dut node
-                    dut_node.controls.dut_resolution = [display_width, display_height]
-                    self.html('Fetching resolution successful: '
-                              'screen width: ' + str(display_width) +
-                              'p, screen height: ' + str(display_height) + 'p')
-                except:
-                    self.html_color('Fetching resolution automatically failed. Stopping script execution', color = 'red')
-                    continue
-
-            # It is important we don't set dut_node active before since this
-            # updates resolution value from controls to actual usage
             self.duts_node.set_active_dut(dut_node)
 
             # If we are using Adb driver we set the parameters here
             if self.get_active_dut_driver() == "Adb":
-                display_width = dut_node.controls.dut_resolution[0]
-                display_height = dut_node.controls.dut_resolution[1]
-                adb_event = dut_node.controls.adb_event_id
+                display_width, display_height = dut_node.resolution
+                adb_event = dut_node.adb_event_id
                 if not self.adb.initialize_settings(display_width, display_height, adb_event):
                     self.html_color('Adb initialization failed, see log for details', 'red')
                     continue
@@ -520,7 +505,7 @@ class Context:
             selected_value = getattr(dut_node.controls, control)
 
             # Database expects to receive some values in float;float or int;int format
-            if control == 'dut_resolution' or control == 'offset':
+            if control == 'offset':
                 selected_value = str(selected_value[0]) + ";" + str(selected_value[1])
 
             if isinstance(selected_value, bool):
@@ -529,6 +514,13 @@ class Context:
                 session_parameters.valueString = str(selected_value)
 
             self.db.add(session_parameters)
+
+        # Save the DUT resolution
+        session_parameters = MeasurementDB.DutParameters()
+        session_parameters.dut_id = self.dut_id
+        session_parameters.name = "DUT resolution [x;y]"
+        session_parameters.valueString = str(dut_node.config.x.max) + ";" + str(dut_node.config.y.max)
+        self.db.add(session_parameters)
 
     def create_dut_db_entry(self, dut):
         """
