@@ -23,55 +23,15 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import logging
 
 from sqlalchemy import Column, Integer, Boolean, Float, ForeignKey, VARCHAR
-from sqlalchemy.orm import backref, relation, relationship
+from sqlalchemy.orm import relationship
 
-import MeasurementDB as mDB
+from MeasurementDB import StationaryThenMoveTest, StationaryThenMoveResults
 from TPPTcommon.ConfigurationDatabase import ConfigurationDatabase
 from TPPTcommon.exceptions import GridCreationError, TipSelectionError
 from TPPTcommon.grid import GridVisContainer, create_center_to_edge_lines, create_center_to_corner_lines
 from TPPTcommon.TestStep import TestStep
 
 logger = logging.getLogger(__name__)
-
-# Database table name for the test case.
-DB_TEST_TABLE_NAME = 'stationary_then_move_test'
-
-# Database table name for the test results.
-DB_RESULTS_TABLE_NAME = 'stationary_then_move_results'
-
-# Database table indices associated with test case.
-DB_TABLE_INDICES = [(DB_TEST_TABLE_NAME, 'test_id'), (DB_RESULTS_TABLE_NAME, 'gesture_id')]
-
-
-class StationaryThenMoveTest(mDB.Base):
-    __tablename__ = DB_TEST_TABLE_NAME
-
-    id = Column(Integer, primary_key=True)
-    test_id = Column(Integer, ForeignKey('test_item.id', ondelete='CASCADE'), nullable=False)
-    test = relation(mDB.TestItem, backref=backref(DB_TEST_TABLE_NAME, order_by=id))
-
-    start_x = Column(Float)
-    start_y = Column(Float)
-    end_x = Column(Float)
-    end_y = Column(Float)
-
-    finger_size = Column(Float)
-    swipe_speed = Column(Float)
-
-
-class StationaryThenMoveResults(mDB.Base):
-    __tablename__ = DB_RESULTS_TABLE_NAME
-
-    id = Column(Integer, primary_key=True)
-    gesture_id = Column(Integer, ForeignKey(DB_TEST_TABLE_NAME + '.id', ondelete='CASCADE'), nullable=False)
-    line = relation(StationaryThenMoveTest, backref=backref(DB_RESULTS_TABLE_NAME, order_by=id))
-
-    panel_x = Column(Float)
-    panel_y = Column(Float)
-    pressure = Column(Float)
-    finger_id = Column(Integer)
-    time = Column(Float)
-    event = Column(Integer)
 
 
 class StationaryThenMove(TestStep):

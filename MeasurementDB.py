@@ -23,7 +23,7 @@ import traceback
 
 from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Boolean, Text, DECIMAL, VARCHAR, BOOLEAN, BLOB
 from sqlalchemy.orm import relation, backref, sessionmaker
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.ext.declarative import declarative_base, declared_attr
 from sqlalchemy import create_engine
 from sqlalchemy import event
 import json
@@ -101,7 +101,7 @@ class ResultDatabase:
         event.listen(self.db, 'connect', on_connect)
         self.session = sessionmaker(bind=self.db, autoflush=False)
         Base.metadata.create_all(self.db)
-        
+
         # TODO: Some explanation is in order.
         # These are database indices for various test and test result tables.
         indices = [
@@ -109,9 +109,14 @@ class ResultDatabase:
             ['test_item', 'testsession_id']
             ]
 
+        for test in BaseTest.__subclasses__():
+            indices.append((test.__tablename__, 'test_id'))
+        for result in BaseResults.__subclasses__():
+            indices.append((result.__tablename__, 'gesture_id'))
+
         # Insert database indices defined by test case modules.
+        # TODO (b/148627899): Remove when legacy test cases are purged
         for module in test_case_modules:
-            # If test case module has no table index definition, it does not use the database.
             if not hasattr(module, 'DB_TABLE_INDICES'):
                 continue
 
@@ -444,3 +449,249 @@ class Setting(Base):
         self.value = value
         self.unit = unit
         self.desc = desc
+
+
+def camel_to_snake(camel):
+    snake = [camel[0].lower()]
+    for c in camel[1:]:
+        if c.isupper():
+            snake.append('_')
+        snake.append(c.lower())
+    return ''.join(snake)
+
+
+class BaseTest(object):
+    """ Mixin class for test gestures.
+
+    Each test case should have a table definition using this mixin, defining a single
+    gesture performed by the robot. The class must be named XXXXTest, and there must
+    be a corresponding XXXXResults class defined to hold measurement results. This mixin
+    and the BaseResults mixin set up the mappings between the database tables.
+    """
+
+    @declared_attr
+    def __tablename__(cls):
+        if not cls.__name__.endswith('Test'):
+            raise ValueError('BaseTest class names must end in "Test"')
+        return camel_to_snake(cls.__name__)
+
+    @declared_attr
+    def test_id(cls):
+        return Column(Integer, ForeignKey('test_item.id', ondelete='CASCADE'), nullable=False)
+
+    @declared_attr
+    def test(cls):
+        return relation(TestItem, backref=backref(cls.__tablename__, order_by=cls.id))
+
+    id = Column(Integer, primary_key=True)
+
+
+class BaseResults(object):
+    """ Mixin class for test results.
+
+    Each test case should have a table definition using this mixin, defining a single
+    touch measurement. The class must be named XXXXResults, and there must be a corresponding
+    XXXXTest class defined. This mixin sets up the mappings between the tables, and defines the
+    common results fields.
+    """
+
+    def _test_table_name(cls):
+        return cls.__tablename__[:cls.__tablename__.rfind('results')] + 'test'
+
+    def _test_class_name(cls):
+        return cls.__name__[:cls.__name__.rfind('Results')] + 'Test'
+
+    @declared_attr
+    def __tablename__(cls):
+        if not cls.__name__.endswith('Results'):
+            raise ValueError('BaseResults class names must end in "Results"')
+        return camel_to_snake(cls.__name__)
+
+    @declared_attr
+    def gesture_id(cls):
+        return Column(Integer, ForeignKey(cls._test_table_name(cls) + '.id', ondelete='CASCADE'), nullable=False)
+
+    @declared_attr
+    def gesture(cls):
+        return relation(cls._test_class_name(cls), backref=backref(cls.__tablename__, order_by=cls.id))
+
+    id = Column(Integer, primary_key=True)
+
+    panel_x = Column(Float)
+    panel_y = Column(Float)
+    pressure = Column(Float)
+    finger_id = Column(Integer)
+    time = Column(Float)
+    event = Column(Integer)
+
+
+class CompassTest(Base, BaseTest):
+    center_x = Column(Float)
+    center_y = Column(Float)
+
+    finger_size = Column(Float)
+    separation = Column(Float)
+    start_azimuth = Column(Float)
+    end_azimuth = Column(Float)
+
+
+class CompassResults(Base, BaseResults):
+    pass
+
+
+class CompassWithTapsTest(Base, BaseTest):
+    center_x = Column(Float)
+    center_y = Column(Float)
+
+    finger_size = Column(Float)
+    separation = Column(Float)
+    start_azimuth = Column(Float)
+    end_azimuth = Column(Float)
+
+    tap_azimuth_step = Column(Float)
+
+
+class CompassWithTapsResults(Base, BaseResults):
+    pass
+
+
+class DrumrollTest(Base, BaseTest):
+    center_x = Column(Float)
+    center_y = Column(Float)
+
+    finger_size = Column(Float)
+    separation = Column(Float)
+    azimuth = Column(Float)
+    number_taps = Column(Integer)
+
+
+class DrumrollResults(Base, BaseResults):
+    pass
+
+
+class FingerToEdgeTest(Base, BaseTest):
+    # For multi-finger lines, these are the coordinates of the primary finger (left-most with
+    # zero azimuth)
+    start_x = Column(Float)
+    start_y = Column(Float)
+    end_x = Column(Float)
+    end_y = Column(Float)
+
+    finger_size = Column(Float)
+
+
+class FingerToEdgeResults(Base, BaseResults):
+    pass
+
+
+class FingerTrackingTest(Base, BaseTest):
+    # For multi-finger lines, these are the coordinates of the primary finger (left-most with
+    # zero azimuth)
+    start_x = Column(Float)
+    start_y = Column(Float)
+    end_x = Column(Float)
+    end_y = Column(Float)
+
+    num_fingers = Column(Integer)
+    finger_size = Column(Float)
+    swipe_speed = Column(Float)
+    separation = Column(Float)
+    azimuth = Column(Float)
+
+
+class FingerTrackingResults(Base, BaseResults):
+    pass
+
+
+class PinchTest(Base, BaseTest):
+    center_x = Column(Float)
+    center_y = Column(Float)
+
+    finger_size = Column(Float)
+    start_separation = Column(Float)
+    end_separation = Column(Float)
+    azimuth = Column(Float)
+
+
+class PinchResults(Base, BaseResults):
+    pass
+
+
+class RepeatedTapsTest(Base, BaseTest):
+    tap_x = Column(Float)
+    tap_y = Column(Float)
+
+    number_taps = Column(Integer)
+
+    finger_size = Column(Float)
+    edge_width = Column(Float)
+
+
+class RepeatedTapsResults(Base, BaseResults):
+    pass
+
+
+class StationaryThenMoveTest(Base, BaseTest):
+    start_x = Column(Float)
+    start_y = Column(Float)
+    end_x = Column(Float)
+    end_y = Column(Float)
+
+    finger_size = Column(Float)
+    swipe_speed = Column(Float)
+
+
+class StationaryThenMoveResults(Base, BaseResults):
+    pass
+
+
+class StationaryWithTapsTest(Base, BaseTest):
+    center_x = Column(Float)
+    center_y = Column(Float)
+
+    finger_size = Column(Float)
+    separation = Column(Float)
+    start_azimuth = Column(Float)
+    end_azimuth = Column(Float)
+
+    tap_azimuth_step = Column(Float)
+
+
+class StationaryWithTapsResults(Base, BaseResults):
+    pass
+
+
+class SwipeTest(Base, BaseTest):
+    # For multi-finger lines, these are the coordinates of the primary finger (left-most with
+    # zero azimuth)
+    start_x = Column(Float)
+    start_y = Column(Float)
+    end_x = Column(Float)
+    end_y = Column(Float)
+
+    num_fingers = Column(Integer)
+    finger_size = Column(Float)
+    swipe_speed = Column(Float)
+    separation = Column(Float)
+    azimuth = Column(Float)
+
+
+class SwipeResults(Base, BaseResults):
+    pass
+
+
+class TapTest(Base, BaseTest):
+    # For multi-finger taps, these are the coordinates of the primary finger (left-most with
+    # zero azimuth)
+    tap_x = Column(Float)
+    tap_y = Column(Float)
+
+    separation = Column(Float)
+    azimuth = Column(Float)
+    num_fingers = Column(Integer)
+    finger_size = Column(Float)
+    edge_width = Column(Float)
+
+
+class TapResults(Base, BaseResults):
+    pass
