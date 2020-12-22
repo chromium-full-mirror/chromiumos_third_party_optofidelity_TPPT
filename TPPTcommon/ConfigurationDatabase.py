@@ -297,18 +297,6 @@ class TestConfiguration(ConfigurationDatabase.TestConfigBase):
 
     _configuration_group_orm = relationship('TestConfigurationGroup', back_populates='_test_configuration_orm')
 
-    _jitter_configurations = \
-        relationship('StationaryJitterStaticNoiseTestParameters', back_populates='_test_configuration_orm')
-
-    _tapping_repeatability_configurations = \
-        relationship('OneFingerTappingRepeatabilityTestParameters', back_populates='_test_configuration_orm')
-
-    _linearity_configurations = \
-        relationship('LinearityTestParameters', back_populates='_test_configuration_orm')
-
-    _grid_accuracy_configurations = \
-        relationship('GridAccuracyTestParameters', back_populates='_test_configuration_orm')
-
     _finger_tracking_configurations = \
         relationship('FingerTrackingTestParameters', back_populates='_test_configuration_orm')
 
