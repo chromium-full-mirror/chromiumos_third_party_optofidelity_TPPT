@@ -28,8 +28,7 @@ from sqlalchemy.orm import relationship
 from MeasurementDB import CompassTest, CompassResults
 from TPPTcommon.ConfigurationDatabase import ConfigurationDatabase
 import TPPTcommon.containers as containers
-from TPPTcommon.exceptions import GridCreationError, TipSelectionError
-from TPPTcommon.grid import GridVisContainer
+from TPPTcommon.exceptions import TipSelectionError
 from TPPTcommon.TestStep import TestStep
 
 logger = logging.getLogger(__name__)
@@ -42,11 +41,10 @@ class Compass(TestStep):
     """
 
     def __init__(self, context):
-        super().__init__('Compass')
-
-        self.context = context
+        super().__init__('Compass', context)
 
         self.database_configuration = CompassTestParameters
+        self.results_class = CompassResults
 
         sizes = [str(key) for (key, value) in sorted(context.tips_node.single_tips_by_size.items()) if len(value) >= 2]
 
@@ -61,45 +59,16 @@ class Compass(TestStep):
 
         self.speed = 30.0
 
-    def execute(self):
-        dut = self.context.get_active_dut()
+    def _pre_gesture_setup(self, compass, dut):
+        self.context.set_robot_default_speed()
+        dut.jump(compass.center_x, compass.center_y, dut.base_distance, dut.base_distance)
+        self.context.set_robot_speed(self.speed)
 
-        self.context.html("Running Compass test for dut:%s" % dut)
-
-        test_item = self.context.create_db_test_item("Compass Test")
-
-        measurement_compasses = self._create_grid(dut)
-
-        for index, compass in enumerate(measurement_compasses):
-            self.context.indicators.set_test_detail('Compass', str(index + 1) + ' / ' + str(len(measurement_compasses)))
-
-            self.context.set_robot_default_speed()
-            dut.jump(compass.center_x, compass.center_y, dut.base_distance, dut.base_distance)
-
-            self.context.set_robot_speed(self.speed)
-
-            continuous_measurement = self.context.create_continuous_measurement(compass)
-            continuous_measurement.start()
-
-            dut.compass(compass.center_x, compass.center_y, compass.start_azimuth, compass.end_azimuth,
-                        compass.separation, clearance=-2)
-
-            continuous_measurement.end()
-
-            touch_list = continuous_measurement.parse_data()
-
-            gesture_id = self._create_gesture(compass, test_item)
-            self._save_measurement_data(gesture_id, touch_list)
-
-            self.context.breakpoint()
-
-        self.context.close_db_test_item(test_item)
+    def _execute_gesture(self, compass, dut):
+        dut.compass(compass.center_x, compass.center_y, compass.start_azimuth, compass.end_azimuth,
+                    compass.separation, clearance=-2)
 
     def _create_grid(self, dut):
-        """
-        Create grid of arcs that define the geometry of the test case.
-        :param dut: DUT where the grid is evaluated on.
-        """
         separation = self.context.get_min_separation(float(self.controls.finger_size))
 
         center_x = dut.width / 2
@@ -130,24 +99,11 @@ class Compass(TestStep):
         ]
         return grid
 
-    def visualize_grid(self, dut):
-        test_pattern = self._create_grid(dut)
-        return GridVisContainer(self.__class__.__name__, (dut.width, dut.height), test_pattern, dut.name)
-
     def tip_is_valid(self):
         try:
             self.context.tips_node.select_tips_by_size(float(self.controls.finger_size), 2, check_only=True)
             return True
         except TipSelectionError as e:
-            logger.error(str(e))
-            return False
-
-    def pattern_is_valid(self):
-        dut = self.context.get_active_dut()
-        try:
-            _ = self._create_grid(dut)
-            return True
-        except GridCreationError as e:
             logger.error(str(e))
             return False
 
@@ -169,29 +125,6 @@ class Compass(TestStep):
         self.context.db.add(test)
 
         return test.id
-
-    def _save_measurement_data(self, gesture_id, touch_list):
-        """
-        Save compass measurement to database.
-        """
-        db_list = []
-
-        for test_result in touch_list:
-            results = CompassResults()
-
-            results.panel_x = float(test_result.panel_x)
-            results.panel_y = float(test_result.panel_y)
-            results.pressure = float(test_result.pressure)
-            results.finger_id = int(test_result.finger_id)
-            results.time = test_result.time
-            results.event = test_result.event
-            results.gesture_id = gesture_id
-
-            db_list.append(results)
-
-            self.context.add_dut_point(float(test_result.panel_x), float(test_result.panel_y))
-
-        self.context.db.addAll(db_list)
 
 
 class CompassTestParameters(ConfigurationDatabase.TestConfigBase):

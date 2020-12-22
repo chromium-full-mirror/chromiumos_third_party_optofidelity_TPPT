@@ -28,8 +28,8 @@ from sqlalchemy.orm import relationship
 
 from MeasurementDB import FingerToEdgeTest, FingerToEdgeResults
 from TPPTcommon.ConfigurationDatabase import ConfigurationDatabase
-from TPPTcommon.exceptions import GridCreationError, TipSelectionError
-from TPPTcommon.grid import GridVisContainer, create_center_to_edge_lines
+from TPPTcommon.exceptions import TipSelectionError
+from TPPTcommon.grid import create_center_to_edge_lines
 from TPPTcommon.TestStep import TestStep
 
 
@@ -42,12 +42,10 @@ class FingerToEdge(TestStep):
     """
 
     def __init__(self, context):
-        super().__init__('Finger To Edge')
+        super().__init__('Finger To Edge', context)
 
-        self.context = context
-
-        # If database_configuration is defined, the controls parameters will be overridden from database if possible
         self.database_configuration = FingerToEdgeTestParameters
+        self.results_class = FingerToEdgeResults
 
         sizes = list(map(str, sorted(context.tips_node.single_tips_by_size.keys())))
 
@@ -56,71 +54,26 @@ class FingerToEdge(TestStep):
 
         self.speed = 30.0
 
-    def execute(self):
-        dut = self.context.get_active_dut()
+    def _pre_gesture_setup(self, line, dut):
+        self.context.set_robot_default_speed()
+        dut.jump(line.start_x, line.start_y, dut.base_distance, dut.base_distance)
+        self.context.set_robot_speed(self.speed)
 
-        base_distance = dut.base_distance
-
-        self.context.html("Running Finger To Edge test for dut:%s" % dut)
-
-        test_item = self.context.create_db_test_item("Finger To Edge Test")
-
-        measurement_lines = self._create_grid(dut)
-
-        for index, line in enumerate(measurement_lines):
-            self.context.indicators.set_test_detail('Line', str(index + 1) + ' / ' + str(len(measurement_lines)))
-
-            self.context.set_robot_default_speed()
-            dut.jump(line.start_x, line.start_y, base_distance, base_distance)
-
-            self.context.set_robot_speed(self.speed)
-
-            continuous_measurement = self.context.create_continuous_measurement(line)
-            continuous_measurement.start()
-
-            dut.drag(line.start_x, line.start_y, line.end_x, line.end_y, clearance=-2)
-
-            continuous_measurement.end()
-
-            touch_list = continuous_measurement.parse_data()
-
-            gesture_id = self._create_gesture(line, test_item)
-
-            self._save_measurement_data(gesture_id, touch_list)
-
-            self.context.breakpoint()
-
-        self.context.close_db_test_item(test_item)
+    def _execute_gesture(self, line, dut):
+        dut.drag(line.start_x, line.start_y, line.end_x, line.end_y, clearance=-2)
 
     def _create_grid(self, dut):
-        """
-        Create grid of lines that define the geometry of the test case.
-        :param dut: DUT where the grid is evaluated on.
-        """
         border_extension = 10.0
 
         grid = create_center_to_edge_lines(dut, -border_extension)
 
         return grid
 
-    def visualize_grid(self, dut):
-        test_pattern = self._create_grid(dut)
-        return GridVisContainer(self.__class__.__name__, (dut.width, dut.height), test_pattern, dut.name)
-
     def tip_is_valid(self):
         try:
             self.context.tips_node.select_tips_by_size(float(self.controls.finger_size), 1, check_only=True)
             return True
         except TipSelectionError as e:
-            logger.error(str(e))
-            return False
-
-    def pattern_is_valid(self):
-        dut = self.context.get_active_dut()
-        try:
-            _ = self._create_grid(dut)
-            return True
-        except GridCreationError as e:
             logger.error(str(e))
             return False
 
@@ -141,29 +94,6 @@ class FingerToEdge(TestStep):
         self.context.db.add(test)
 
         return test.id
-
-    def _save_measurement_data(self, gesture_id, touch_list):
-        """
-        Save finger to edge measurement to database.
-        """
-        db_list = []
-
-        for test_result in touch_list:
-            results = FingerToEdgeResults()
-
-            results.panel_x = float(test_result.panel_x)
-            results.panel_y = float(test_result.panel_y)
-            results.pressure = float(test_result.pressure)
-            results.finger_id = int(test_result.finger_id)
-            results.time = test_result.time
-            results.event = test_result.event
-            results.gesture_id = gesture_id
-
-            db_list.append(results)
-
-            self.context.add_dut_point(float(test_result.panel_x), float(test_result.panel_y))
-
-        self.context.db.addAll(db_list)
 
 
 class FingerToEdgeTestParameters(ConfigurationDatabase.TestConfigBase):

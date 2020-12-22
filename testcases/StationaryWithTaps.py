@@ -28,8 +28,7 @@ from sqlalchemy.orm import relationship
 from MeasurementDB import StationaryWithTapsTest, StationaryWithTapsResults
 from TPPTcommon.ConfigurationDatabase import ConfigurationDatabase
 import TPPTcommon.containers as containers
-from TPPTcommon.exceptions import GridCreationError, TipSelectionError
-from TPPTcommon.grid import GridVisContainer
+from TPPTcommon.exceptions import TipSelectionError
 from TPPTcommon.TestStep import TestStep
 
 logger = logging.getLogger(__name__)
@@ -41,11 +40,10 @@ class StationaryWithTaps(TestStep):
     """
 
     def __init__(self, context):
-        super().__init__('Stationary With Taps')
-
-        self.context = context
+        super().__init__('Stationary With Taps', context)
 
         self.database_configuration = StationaryWithTapsTestParameters
+        self.results_class = StationaryWithTapsResults
 
         sizes = [str(key) for (key, value) in sorted(context.tips_node.single_tips_by_size.items()) if len(value) >= 2]
 
@@ -58,48 +56,19 @@ class StationaryWithTaps(TestStep):
         self.speed = 3.0
         self.tap_azimuth_step = 8.0
 
-    def execute(self):
+    def _pre_gesture_setup(self, compass, dut):
+        self.context.set_robot_default_speed()
+        dut.jump(compass.center_x, compass.center_y, dut.base_distance, dut.base_distance)
+        dut.move(compass.center_x, compass.center_y, dut.base_distance, azimuth=compass.start_azimuth)
+        separation = self.context.get_min_separation(float(self.controls.finger_size))
+        self.context.robot.set_finger_separation(separation)
+        self.context.set_robot_speed(self.speed)
 
-        dut = self.context.get_active_dut()
-        tip = self.context.get_active_tip()
-
-        self.context.html("Running Stationary With Taps test for dut:%s, tip:%s" %
-                          (dut, tip))
-
-        test_item = self.context.create_db_test_item("Stationary With Taps Test")
-
-        measurement_compasses = self._create_grid(dut)
-
-        for index, compass in enumerate(measurement_compasses):
-            self.context.indicators.set_test_detail('Compass', str(index + 1) + ' / ' + str(len(measurement_compasses)))
-
-            self.context.set_robot_default_speed()
-            dut.jump(compass.center_x, compass.center_y, dut.base_distance, dut.base_distance)
-
-            self.context.set_robot_speed(self.speed)
-
-            continuous_measurement = self.context.create_continuous_measurement(compass)
-            continuous_measurement.start()
-
-            dut.compass_tap(compass.center_x, compass.center_y, compass.start_azimuth, compass.end_azimuth,
-                            compass.separation, self.tap_azimuth_step, tap_with_stationary_finger=False, clearance=-2)
-
-            continuous_measurement.end()
-
-            touch_list = continuous_measurement.parse_data()
-
-            gesture_id = self._create_gesture(compass, test_item)
-            self._save_measurement_data(gesture_id, touch_list)
-
-            self.context.breakpoint()
-
-        self.context.close_db_test_item(test_item)
+    def _execute_gesture(self, compass, dut):
+        dut.compass_tap(compass.center_x, compass.center_y, compass.start_azimuth, compass.end_azimuth,
+                        compass.separation, self.tap_azimuth_step, tap_with_stationary_finger=False, clearance=-2)
 
     def _create_grid(self, dut):
-        """
-        Create grid of arcs that define the geometry of the test case.
-        :param dut: DUT where the grid is evaluated on.
-        """
         separation = self.context.get_min_separation(float(self.controls.finger_size))
 
         center_x = dut.width / 2
@@ -111,24 +80,11 @@ class StationaryWithTaps(TestStep):
         ]
         return grid
 
-    def visualize_grid(self, dut):
-        test_pattern = self._create_grid(dut)
-        return GridVisContainer(self.__class__.__name__, (dut.width, dut.height), test_pattern, dut.name)
-
     def tip_is_valid(self):
         try:
             self.context.tips_node.select_tips_by_size(float(self.controls.finger_size), 2, check_only=True)
             return True
         except TipSelectionError as e:
-            logger.error(str(e))
-            return False
-
-    def pattern_is_valid(self):
-        dut = self.context.get_active_dut()
-        try:
-            _ = self._create_grid(dut)
-            return True
-        except GridCreationError as e:
             logger.error(str(e))
             return False
 
@@ -151,29 +107,6 @@ class StationaryWithTaps(TestStep):
         self.context.db.add(test)
 
         return test.id
-
-    def _save_measurement_data(self, gesture_id, touch_list):
-        """
-        Save compass with taps measurement to database.
-        """
-        db_list = []
-
-        for test_result in touch_list:
-            results = StationaryWithTapsResults()
-
-            results.panel_x = float(test_result.panel_x)
-            results.panel_y = float(test_result.panel_y)
-            results.pressure = float(test_result.pressure)
-            results.finger_id = int(test_result.finger_id)
-            results.time = test_result.time
-            results.event = test_result.event
-            results.gesture_id = gesture_id
-
-            db_list.append(results)
-
-            self.context.add_dut_point(float(test_result.panel_x), float(test_result.panel_y))
-
-        self.context.db.addAll(db_list)
 
 
 class StationaryWithTapsTestParameters(ConfigurationDatabase.TestConfigBase):

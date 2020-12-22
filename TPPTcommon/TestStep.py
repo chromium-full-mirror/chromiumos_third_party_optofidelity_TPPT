@@ -19,22 +19,31 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
+import logging
+
 from abc import ABC, abstractmethod
-import decimal
 from copy import copy, deepcopy
-from TPPTcommon.Node import Node
+
 from TPPTcommon.ConfigurationDatabase import TestConfiguration, ConfigurationDatabase, TestConfigurationGroup
+from TPPTcommon.exceptions import GridCreationError
+from TPPTcommon.grid import GridVisContainer
+from TPPTcommon.Node import Node
+
+logger = logging.getLogger(__name__)
 
 
 class TestStep(Node, ABC):
-    def __init__(self, name):
+    def __init__(self, name, context):
         """
         Executed when script is loaded, child classes should define the test case controls for GUI.
         """
         super().__init__(name)
+        self.context = context
         self.display_enabled = True
         self.enabled = False
         self.database_configuration = None
+        self.results_class = None
+        self.measurement_timeout = 0.5
 
     def __repr__(self):
         return self.name
@@ -101,10 +110,45 @@ class TestStep(Node, ABC):
 
         return True if existing_configuration is not None else False
 
-    @abstractmethod
     def execute(self):
         """
         Tell the robot to perform each gesture in turn, and record the events from the DUT.
+        """
+        dut = self.context.get_active_dut()
+        self.context.html("Running %s test for dut:%s" % (self.name, dut))
+        test_item = self.context.create_db_test_item("%s Test" % self.name)
+        gestures = self._create_grid(dut)
+
+        for index, gesture in enumerate(gestures):
+            self.context.indicators.set_test_detail('Gesture', str(index + 1) + ' / ' + str(len(gestures)))
+
+            self._pre_gesture_setup(gesture, dut)
+
+            continuous_measurement = self.context.create_continuous_measurement(gesture)
+            continuous_measurement.start(timeout=self.measurement_timeout)
+
+            self._execute_gesture(gesture, dut)
+
+            continuous_measurement.end()
+            touch_list = continuous_measurement.parse_data()
+            gesture_id = self._create_gesture(gesture, test_item)
+            self._save_measurement_data(gesture_id, touch_list)
+
+            self.context.breakpoint()
+
+        self.context.close_db_test_item(test_item)
+
+    @abstractmethod
+    def _pre_gesture_setup(self, gesture, dut):
+        """
+        Setup to be done before each gesture is executed, including robot positioning.
+        """
+        pass
+
+    @abstractmethod
+    def _execute_gesture(self, gesture, dut):
+        """
+        Tell the robot to perform a single gesture.
         """
         pass
 
@@ -116,20 +160,65 @@ class TestStep(Node, ABC):
         """
         pass
 
-    @abstractmethod
     def pattern_is_valid(self):
         """
         Try to create the measurement grid to see if it is possible
         :return: True if the grid can be created, False if the grid cannot be created
         """
+        dut = self.context.get_active_dut()
+        try:
+            _ = self._create_grid(dut)
+            return True
+        except GridCreationError as e:
+            logger.error(str(e))
+            return False
+
+    @abstractmethod
+    def _create_grid(self, dut):
+        """
+        Create grid of gesture shapes (lines, arcs, etc.) that define the geometry of the test case.
+        :param dut: DUT where the grid is evaluated on.
+        """
         pass
 
     def visualize_grid(self, dut):
         """
-        Construct a visualization of the test case grid. Optional method for test cases.
+        Construct a visualization of the test case grid.
         :param dut: DUT where the grid is evaluated on.
         """
-        return None
+        test_pattern = self._create_grid(dut)
+        return GridVisContainer(self.__class__.__name__, (dut.width, dut.height), test_pattern, dut.name)
+
+    @abstractmethod
+    def _create_gesture(self, gesture, test_item):
+        """
+        Create gesture and add to database.
+        :return: id of created gesture.
+        """
+        pass
+
+    def _save_measurement_data(self, gesture_id, touch_list):
+        """
+        Save measurements for a single gesture to database.
+        """
+        db_list = []
+
+        for test_result in touch_list:
+            results = self.results_class()
+
+            results.panel_x = float(test_result.panel_x)
+            results.panel_y = float(test_result.panel_y)
+            results.pressure = float(test_result.pressure)
+            results.finger_id = int(test_result.finger_id)
+            results.time = test_result.time
+            results.event = test_result.event
+            results.gesture_id = gesture_id
+
+            db_list.append(results)
+
+            self.context.add_dut_point(float(test_result.panel_x), float(test_result.panel_y))
+
+        self.context.db.addAll(db_list)
 
 
 def set_controls(tests, configurations):

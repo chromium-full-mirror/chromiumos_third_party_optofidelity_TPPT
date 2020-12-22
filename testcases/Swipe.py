@@ -27,9 +27,8 @@ from sqlalchemy.orm import relationship
 
 from MeasurementDB import SwipeTest, SwipeResults
 from TPPTcommon.ConfigurationDatabase import ConfigurationDatabase
-from TPPTcommon.exceptions import GridCreationError, TipSelectionError
-from TPPTcommon.grid import (create_multi_swipe_horizontal, create_multi_swipe_vertical,
-                             create_multi_swipe_diagonal, GridVisContainer)
+from TPPTcommon.exceptions import TipSelectionError
+from TPPTcommon.grid import create_multi_swipe_horizontal, create_multi_swipe_vertical, create_multi_swipe_diagonal
 from TPPTcommon.TestStep import TestStep
 
 logger = logging.getLogger(__name__)
@@ -42,12 +41,11 @@ class Swipe(TestStep):
     """
 
     def __init__(self, context):
-        super().__init__('Swipe')
-
-        self.context = context
+        super().__init__('Swipe', context)
 
         # If database_configuration is defined, the controls parameters will be overridden from database if possible
         self.database_configuration = SwipeTestParameters
+        self.results_class = SwipeResults
 
         sizes = list(map(str, sorted(context.tips_node.single_tips_by_size.keys())))
 
@@ -59,50 +57,18 @@ class Swipe(TestStep):
 
         self.speed = 300.0
 
-    def execute(self):
-        dut = self.context.get_active_dut()
+    def _pre_gesture_setup(self, line, dut):
+        self.context.set_robot_default_speed()
+        dut.jump(line.start_x, line.start_y, dut.base_distance, dut.base_distance)
+        self.context.set_robot_speed(self.speed)
 
-        base_distance = dut.base_distance
+    def _execute_gesture(self, line, dut):
         separation = self.context.get_min_separation(float(self.controls.finger_size))
-
-        self.context.html("Running Swipe test for dut:%s" % dut)
-
-        test_item = self.context.create_db_test_item("Swipe Test")
-
-        measurement_lines = self._create_grid(dut)
-
-        for index, line in enumerate(measurement_lines):
-            self.context.indicators.set_test_detail('Line', str(index + 1) + ' / ' + str(len(measurement_lines)))
-
-            self.context.set_robot_default_speed()
-            dut.jump(line.start_x, line.start_y, base_distance, base_distance)
-
-            self.context.set_robot_speed(self.speed)
-
-            continuous_measurement = self.context.create_continuous_measurement(line)
-            continuous_measurement.start()
-
-            self.context.robot.set_finger_separation(separation)
-            dut.swipe(line.start_x, line.start_y, line.end_x, line.end_y, clearance=-2, radius=20,
-                      azimuth1=line.angle, azimuth2=line.angle)
-
-            continuous_measurement.end()
-
-            touch_list = continuous_measurement.parse_data()
-
-            gesture_id = self._create_gesture(line, test_item, separation)
-
-            self._save_measurement_data(gesture_id, touch_list)
-
-            self.context.breakpoint()
-
-        self.context.close_db_test_item(test_item)
+        self.context.robot.set_finger_separation(separation)
+        dut.swipe(line.start_x, line.start_y, line.end_x, line.end_y, clearance=-2, radius=20,
+                  azimuth1=line.angle, azimuth2=line.angle)
 
     def _create_grid(self, dut):
-        """
-        Create grid of lines that define the geometry of the test case.
-        :param dut: DUT where the grid is evaluated on.
-        """
         separation = self.context.get_min_separation(float(self.controls.finger_size))
         border_width = 10.0
 
@@ -111,10 +77,6 @@ class Swipe(TestStep):
         grid.extend(create_multi_swipe_diagonal(dut, self.controls.num_fingers, separation, border_width))
 
         return grid
-
-    def visualize_grid(self, dut):
-        test_pattern = self._create_grid(dut)
-        return GridVisContainer(self.__class__.__name__, (dut.width, dut.height), test_pattern, dut.name)
 
     def tip_is_valid(self):
         # TODO: allow multiple fingers when support is added in robot client
@@ -130,20 +92,8 @@ class Swipe(TestStep):
             logger.error(str(e))
             return False
 
-    def pattern_is_valid(self):
-        dut = self.context.get_active_dut()
-        try:
-            _ = self._create_grid(dut)
-            return True
-        except GridCreationError as e:
-            logger.error(str(e))
-            return False
-
-    def _create_gesture(self, line, test_item, separation):
-        """
-        Create gesture and add to database.
-        :return: id of created gesture.
-        """
+    def _create_gesture(self, line, test_item):
+        separation = self.context.get_min_separation(float(self.controls.finger_size))
         test = SwipeTest()
 
         test.start_x = line.start_x
@@ -160,29 +110,6 @@ class Swipe(TestStep):
         self.context.db.add(test)
 
         return test.id
-
-    def _save_measurement_data(self, gesture_id, touch_list):
-        """
-        Save swipe measurement to database.
-        """
-        db_list = []
-
-        for test_result in touch_list:
-            results = SwipeResults()
-
-            results.panel_x = float(test_result.panel_x)
-            results.panel_y = float(test_result.panel_y)
-            results.pressure = float(test_result.pressure)
-            results.finger_id = int(test_result.finger_id)
-            results.time = test_result.time
-            results.event = test_result.event
-            results.gesture_id = gesture_id
-
-            db_list.append(results)
-
-            self.context.add_dut_point(float(test_result.panel_x), float(test_result.panel_y))
-
-        self.context.db.addAll(db_list)
 
 
 class SwipeTestParameters(ConfigurationDatabase.TestConfigBase):

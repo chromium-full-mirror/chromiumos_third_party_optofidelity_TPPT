@@ -28,8 +28,7 @@ from sqlalchemy.orm import relationship
 from MeasurementDB import RepeatedTapsTest, RepeatedTapsResults
 from TPPTcommon.ConfigurationDatabase import ConfigurationDatabase
 import TPPTcommon.containers as containers
-from TPPTcommon.exceptions import GridCreationError, TipSelectionError
-from TPPTcommon.grid import GridVisContainer
+from TPPTcommon.exceptions import TipSelectionError
 from TPPTcommon.TestStep import TestStep
 
 logger = logging.getLogger(__name__)
@@ -41,11 +40,11 @@ class RepeatedTaps(TestStep):
     """
 
     def __init__(self, context):
-        super().__init__('Repeated Taps')
-
-        self.context = context
+        super().__init__('Repeated Taps', context)
 
         self.database_configuration = RepeatedTapsTestParameters
+        self.results_class = RepeatedTapsResults
+        self.measurement_timeout = 6.0
 
         sizes = list(map(str, sorted(context.tips_node.single_tips_by_size.keys())))
 
@@ -58,41 +57,14 @@ class RepeatedTaps(TestStep):
         self.controls.taps_per_location = 20
         self.controls.info['taps_per_location'] = {'label': 'Taps per location'}
 
-    def execute(self):
-        dut = self.context.get_active_dut()
+    def _pre_gesture_setup(self, tap, dut):
+        dut.jump(tap.x, tap.y, dut.base_distance, dut.base_distance)
 
-        self.context.html("Running Repeated Taps test for dut:%s" % dut)
-
-        test_item = self.context.create_db_test_item("Repeated Taps Test")
-
-        measurement_taps = self._create_grid(dut)
-
-        for index, tap in enumerate(measurement_taps):
-            continuous_measurement = self.context.create_continuous_measurement(tap)
-            continuous_measurement.start(timeout=6.0)
-
-            for i in range(self.controls.taps_per_location):
-                self.context.indicators.set_test_details([['Position', str(index + 1) + ' / ' + str(len(measurement_taps))],
-                                                          ['Tap', str(i+1) + ' / ' + str(self.controls.taps_per_location)]])
-                dut.tap(tap.x, tap.y, clearance=-2)
-
-            continuous_measurement.end()
-
-            touch_list = continuous_measurement.parse_data()
-
-            gesture_id = self._create_gesture(test_item, tap)
-
-            self._save_measurement_data(gesture_id, touch_list)
-
-            self.context.breakpoint()
-
-        self.context.close_db_test_item(test_item)
+    def _execute_gesture(self, tap, dut):
+        for i in range(self.controls.taps_per_location):
+            dut.tap(tap.x, tap.y, clearance=-2)
 
     def _create_grid(self, dut):
-        """
-        Create grid of taps that define the geometry of the test case.
-        :param dut: DUT where the grid is evaluated on.
-        """
         grid = []
 
         xs = [self.controls.edge_width, dut.width / 2, dut.width - self.controls.edge_width]
@@ -103,10 +75,6 @@ class RepeatedTaps(TestStep):
 
         return grid
 
-    def visualize_grid(self, dut):
-        test_pattern = self._create_grid(dut)
-        return GridVisContainer(self.__class__.__name__, (dut.width, dut.height), test_pattern, dut.name)
-
     def tip_is_valid(self):
         try:
             self.context.tips_node.select_tips_by_size(float(self.controls.finger_size), 1, check_only=True)
@@ -115,16 +83,7 @@ class RepeatedTaps(TestStep):
             logger.error(str(e))
             return False
 
-    def pattern_is_valid(self):
-        dut = self.context.get_active_dut()
-        try:
-            _ = self._create_grid(dut)
-            return True
-        except GridCreationError as e:
-            logger.error(str(e))
-            return False
-
-    def _create_gesture(self, test_item, tap):
+    def _create_gesture(self, tap, test_item):
         """
         Create gesture and add to database.
         :return: id of created gesture.
@@ -141,29 +100,6 @@ class RepeatedTaps(TestStep):
         self.context.db.add(test)
 
         return test.id
-
-    def _save_measurement_data(self, gesture_id, touch_list):
-        """
-        Save repeated taps measurement to database.
-        """
-        db_list = []
-
-        for test_result in touch_list:
-            results = RepeatedTapsResults()
-
-            results.panel_x = float(test_result.panel_x)
-            results.panel_y = float(test_result.panel_y)
-            results.pressure = float(test_result.pressure)
-            results.finger_id = int(test_result.finger_id)
-            results.time = test_result.time
-            results.event = test_result.event
-            results.gesture_id = gesture_id
-
-            db_list.append(results)
-
-            self.context.add_dut_point(float(test_result.panel_x), float(test_result.panel_y))
-
-        self.context.db.addAll(db_list)
 
 
 class RepeatedTapsTestParameters(ConfigurationDatabase.TestConfigBase):

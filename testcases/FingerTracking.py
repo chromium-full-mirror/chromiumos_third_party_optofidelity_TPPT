@@ -27,9 +27,8 @@ from sqlalchemy.orm import relationship
 
 from MeasurementDB import FingerTrackingTest, FingerTrackingResults
 from TPPTcommon.ConfigurationDatabase import ConfigurationDatabase
-from TPPTcommon.exceptions import GridCreationError, TipSelectionError
-from TPPTcommon.grid import create_multi_swipe_horizontal, create_multi_swipe_vertical
-from TPPTcommon.grid import create_multi_swipe_diagonal, GridVisContainer
+from TPPTcommon.exceptions import TipSelectionError
+from TPPTcommon.grid import create_multi_swipe_horizontal, create_multi_swipe_vertical, create_multi_swipe_diagonal
 from TPPTcommon.TestStep import TestStep
 
 logger = logging.getLogger(__name__)
@@ -43,12 +42,11 @@ class FingerTracking(TestStep):
     """
 
     def __init__(self, context):
-        super().__init__('Finger Tracking')
-
-        self.context = context
+        super().__init__('Finger Tracking', context)
 
         # If database_configuration is defined, the controls parameters will be overridden from database if possible
         self.database_configuration = FingerTrackingTestParameters
+        self.results_class = FingerTrackingResults
 
         sizes = list(map(str, sorted(context.tips_node.single_tips_by_size.keys())))
 
@@ -61,52 +59,21 @@ class FingerTracking(TestStep):
         self.controls.speed = 100.0
         self.controls.info['speed'] = {'label': 'Speed (mm/s)', 'min': 10.0}
 
-    def execute(self):
-        dut = self.context.get_active_dut()
+    def _pre_gesture_setup(self, line, dut):
+        self.context.set_robot_default_speed()
+        dut.jump(line.start_x, line.start_y, dut.base_distance, dut.base_distance)
+        self.context.set_robot_speed(self.controls.speed)
 
-        base_distance = dut.base_distance
+    def _execute_gesture(self, line, dut):
         separation = self.context.get_min_separation(float(self.controls.finger_size))
+        self.context.robot.set_finger_separation(separation)
 
-        self.context.html("Running Finger Tracking test for dut:%s" % dut)
-
-        test_item = self.context.create_db_test_item("Finger Tracking Test")
-
-        measurement_lines = self._create_grid(dut)
-
-        for index, line in enumerate(measurement_lines):
-            self.context.indicators.set_test_detail('Line', str(index + 1) + ' / ' + str(len(measurement_lines)))
-
-            self.context.set_robot_default_speed()
-            dut.jump(line.start_x, line.start_y, base_distance, base_distance)
-
-            self.context.set_robot_speed(self.controls.speed)
-
-            continuous_measurement = self.context.create_continuous_measurement(line)
-            continuous_measurement.start()
-
-            self.context.robot.set_finger_separation(separation)
-            dut.move(line.start_x, line.start_y, base_distance, azimuth=line.angle)
-            dut.move(line.start_x, line.start_y, -2, azimuth=line.angle)
-            dut.move(line.end_x, line.end_y, -2, azimuth=line.angle)
-            dut.move(line.end_x, line.end_y, base_distance, azimuth=line.angle)
-
-            continuous_measurement.end()
-
-            touch_list = continuous_measurement.parse_data()
-
-            gesture_id = self._create_gesture(line, test_item, separation)
-
-            self._save_measurement_data(gesture_id, touch_list)
-
-            self.context.breakpoint()
-
-        self.context.close_db_test_item(test_item)
+        dut.move(line.start_x, line.start_y, dut.base_distance, azimuth=line.angle)
+        dut.move(line.start_x, line.start_y, -2, azimuth=line.angle)
+        dut.move(line.end_x, line.end_y, -2, azimuth=line.angle)
+        dut.move(line.end_x, line.end_y, dut.base_distance, azimuth=line.angle)
 
     def _create_grid(self, dut):
-        """
-        Create grid of lines that define the geometry of the test case.
-        :param dut: DUT where the grid is evaluated on.
-        """
         separation = self.context.get_min_separation(float(self.controls.finger_size))
         border_width = 10.0
 
@@ -115,10 +82,6 @@ class FingerTracking(TestStep):
         grid.extend(create_multi_swipe_diagonal(dut, self.controls.num_fingers, separation, border_width))
 
         return grid
-
-    def visualize_grid(self, dut):
-        test_pattern = self._create_grid(dut)
-        return GridVisContainer(self.__class__.__name__, (dut.width, dut.height), test_pattern, dut.name)
 
     def tip_is_valid(self):
         try:
@@ -129,21 +92,13 @@ class FingerTracking(TestStep):
             logger.error(str(e))
             return False
 
-    def pattern_is_valid(self):
-        dut = self.context.get_active_dut()
-        try:
-            _ = self._create_grid(dut)
-            return True
-        except GridCreationError as e:
-            logger.error(str(e))
-            return False
-
-    def _create_gesture(self, line, test_item, separation):
+    def _create_gesture(self, line, test_item):
         """
         Create gesture and add to database.
         :return: id of created gesture.
         """
         test = FingerTrackingTest()
+        separation = self.context.get_min_separation(float(self.controls.finger_size))
 
         test.start_x = line.start_x
         test.start_y = line.start_y
@@ -159,29 +114,6 @@ class FingerTracking(TestStep):
         self.context.db.add(test)
 
         return test.id
-
-    def _save_measurement_data(self, gesture_id, touch_list):
-        """
-        Save finger tracking measurement to database.
-        """
-        db_list = []
-
-        for test_result in touch_list:
-            results = FingerTrackingResults()
-
-            results.panel_x = float(test_result.panel_x)
-            results.panel_y = float(test_result.panel_y)
-            results.pressure = float(test_result.pressure)
-            results.finger_id = int(test_result.finger_id)
-            results.time = test_result.time
-            results.event = test_result.event
-            results.gesture_id = gesture_id
-
-            db_list.append(results)
-
-            self.context.add_dut_point(float(test_result.panel_x), float(test_result.panel_y))
-
-        self.context.db.addAll(db_list)
 
 
 class FingerTrackingTestParameters(ConfigurationDatabase.TestConfigBase):

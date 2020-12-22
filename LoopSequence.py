@@ -271,12 +271,12 @@ class Context:
         for test in executable_tests:
             self.select_tips(test)
 
+            # Set default robot speed before running test case. Previous test may have changed current robot speed.
+            self.set_robot_default_speed()
+
             # Jump over DUT without specific jump height to avoid problems in case tip was changed.
             active_dut = self.get_active_dut()
             active_dut.jump(0.0, 0.0, active_dut.base_distance)
-
-            # Set default robot speed before running test case. Previous test may have changed current robot speed.
-            self.set_robot_default_speed()
 
             self.clear_dut_points()
 
