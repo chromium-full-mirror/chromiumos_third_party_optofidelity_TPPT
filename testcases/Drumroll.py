@@ -25,7 +25,7 @@ import logging
 from sqlalchemy import Column, Integer, Boolean, ForeignKey, VARCHAR
 from sqlalchemy.orm import relationship
 
-from MeasurementDB import DrumrollTest, DrumrollResults
+from optofidelity_protocols.measurementdb import DrumrollTest, DrumrollResults
 from TPPTcommon.ConfigurationDatabase import ConfigurationDatabase
 from TPPTcommon.exceptions import TipSelectionError
 from TPPTcommon.grid import create_multi_finger_tap_grid

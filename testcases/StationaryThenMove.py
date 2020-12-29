@@ -25,7 +25,7 @@ import logging
 from sqlalchemy import Column, Integer, Boolean, Float, ForeignKey, VARCHAR
 from sqlalchemy.orm import relationship
 
-from MeasurementDB import StationaryThenMoveTest, StationaryThenMoveResults
+from optofidelity_protocols.measurementdb import StationaryThenMoveTest, StationaryThenMoveResults
 from TPPTcommon.ConfigurationDatabase import ConfigurationDatabase
 from TPPTcommon.exceptions import TipSelectionError
 from TPPTcommon.grid import create_center_to_edge_lines, create_center_to_corner_lines

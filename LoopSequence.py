@@ -39,7 +39,7 @@ from TPPTcommon.SettingsNode import SettingsNode
 from TPPTcommon.Node import Parameter, RootNode, Stop, save_script_values, \
     load_script_values, load_script_history_headers
 from TPPTcommon.Indicators import Indicators
-import MeasurementDB
+from optofidelity_protocols import measurementdb
 from scriptpath import join_script_root_directory
 from client.tntclient.tnt_client import TnTClient
 import threading
@@ -396,7 +396,7 @@ class Context:
         self.robot.set_active_finger(0)
 
         # Create test session database entry.
-        self.test_session = MeasurementDB.TestSession()
+        self.test_session = measurementdb.TestSession()
         self.test_session.operator = self.get_parameter('Operator').value
         self.test_session.starttime = time.strftime(TIME_FORMAT)
         self.test_session.notes = self.get_parameter('Notes').value
@@ -470,7 +470,7 @@ class Context:
         """
 
         # Open database just before execution to make sure that SQL objects are created in the same thread.
-        self.db = MeasurementDB.ResultDatabase(DATABASE_PATH, self.tests_node.test_case_modules)
+        self.db = measurementdb.ResultDatabase(DATABASE_PATH, self.tests_node.test_case_modules)
 
         try:
             self._execute()
@@ -496,7 +496,7 @@ class Context:
         for control in dut_node.controls.get_controls():
             parameter_label = dut_node.controls.info[control]["label"]
 
-            session_parameters = MeasurementDB.DutParameters()
+            session_parameters = measurementdb.DutParameters()
             session_parameters.dut_id = self.dut_id
 
             # TODO: Might be better to use control key as parameter name instead of label.
@@ -516,7 +516,7 @@ class Context:
             self.db.add(session_parameters)
 
         # Save the DUT resolution
-        session_parameters = MeasurementDB.DutParameters()
+        session_parameters = measurementdb.DutParameters()
         session_parameters.dut_id = self.dut_id
         session_parameters.name = "DUT resolution [x;y]"
         session_parameters.valueString = str(dut_node.config.x.max) + ";" + str(dut_node.config.y.max)
@@ -530,7 +530,7 @@ class Context:
         """
 
         # Each test run creates new DUT information in case DUT parameters were changed.
-        test_dut = MeasurementDB.TestDUT()
+        test_dut = measurementdb.TestDUT()
         test_dut.program = self.get_parameter('Program').value
         test_dut.manufacturer = self.get_parameter('Manufacturer').value
         test_dut.batch = self.get_parameter('Version').value
@@ -545,7 +545,7 @@ class Context:
 
 
         # Add DUT dimensions
-        session_parameters = MeasurementDB.DutParameters()
+        session_parameters = measurementdb.DutParameters()
         session_parameters.dut_id = test_dut.id
         session_parameters.name = 'DUT dimensions [x;y, mm]'
         session_parameters.valueString = "%s;%s" % (self.tnt.dut(str(dut)).width,
@@ -711,7 +711,7 @@ class Context:
             test_dictionary[test_type.name] = test_type.id
 
         # Create a new ddt test table to database
-        ddt_test = MeasurementDB.TestItem()
+        ddt_test = measurementdb.TestItem()
         ddt_test.dut_id = self.dut_id
         ddt_test.finger_type = str(self.get_active_tip()) if self.tips_node.active_tip is not None else ""
         ddt_test.testsession_id = self.test_session_id

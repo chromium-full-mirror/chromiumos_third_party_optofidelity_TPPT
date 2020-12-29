@@ -25,7 +25,7 @@ import logging
 from sqlalchemy import Column, Integer, Boolean, ForeignKey, VARCHAR
 from sqlalchemy.orm import relationship
 
-from MeasurementDB import SwipeTest, SwipeResults
+from optofidelity_protocols.measurementdb import SwipeTest, SwipeResults
 from TPPTcommon.ConfigurationDatabase import ConfigurationDatabase
 from TPPTcommon.exceptions import TipSelectionError
 from TPPTcommon.grid import create_multi_swipe_horizontal, create_multi_swipe_vertical, create_multi_swipe_diagonal

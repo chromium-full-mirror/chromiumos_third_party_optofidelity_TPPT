@@ -26,7 +26,7 @@ from sqlalchemy import Column, Integer, Boolean, ForeignKey, VARCHAR
 from sqlalchemy.orm import relationship
 
 
-from MeasurementDB import FingerToEdgeTest, FingerToEdgeResults
+from optofidelity_protocols.measurementdb import FingerToEdgeTest, FingerToEdgeResults
 from TPPTcommon.ConfigurationDatabase import ConfigurationDatabase
 from TPPTcommon.exceptions import TipSelectionError
 from TPPTcommon.grid import create_center_to_edge_lines

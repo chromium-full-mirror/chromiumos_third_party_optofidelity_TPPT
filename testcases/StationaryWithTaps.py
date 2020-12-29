@@ -25,7 +25,7 @@ import logging
 from sqlalchemy import Column, Integer, Boolean, ForeignKey, VARCHAR
 from sqlalchemy.orm import relationship
 
-from MeasurementDB import StationaryWithTapsTest, StationaryWithTapsResults
+from optofidelity_protocols.measurementdb import StationaryWithTapsTest, StationaryWithTapsResults
 from TPPTcommon.ConfigurationDatabase import ConfigurationDatabase
 import TPPTcommon.containers as containers
 from TPPTcommon.exceptions import TipSelectionError

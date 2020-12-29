@@ -25,7 +25,7 @@ import logging
 from sqlalchemy import Boolean, Column, Float, ForeignKey, Integer, VARCHAR
 from sqlalchemy.orm import relationship
 
-from MeasurementDB import FingerTrackingTest, FingerTrackingResults
+from optofidelity_protocols.measurementdb import FingerTrackingTest, FingerTrackingResults
 from TPPTcommon.ConfigurationDatabase import ConfigurationDatabase
 from TPPTcommon.exceptions import TipSelectionError
 from TPPTcommon.grid import create_multi_swipe_horizontal, create_multi_swipe_vertical, create_multi_swipe_diagonal

@@ -25,7 +25,7 @@ import logging
 from sqlalchemy import Column, Integer, Boolean, ForeignKey, VARCHAR
 from sqlalchemy.orm import relationship
 
-from MeasurementDB import PinchTest, PinchResults
+from optofidelity_protocols.measurementdb import PinchTest, PinchResults
 from TPPTcommon.ConfigurationDatabase import ConfigurationDatabase
 import TPPTcommon.containers as containers
 from TPPTcommon.exceptions import GridCreationError, TipSelectionError

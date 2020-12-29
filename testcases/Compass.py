@@ -25,7 +25,7 @@ import logging
 from sqlalchemy import Column, Integer, Boolean, Float, ForeignKey, VARCHAR
 from sqlalchemy.orm import relationship
 
-from MeasurementDB import CompassTest, CompassResults
+from optofidelity_protocols.measurementdb import CompassTest, CompassResults
 from TPPTcommon.ConfigurationDatabase import ConfigurationDatabase
 import TPPTcommon.containers as containers
 from TPPTcommon.exceptions import TipSelectionError
