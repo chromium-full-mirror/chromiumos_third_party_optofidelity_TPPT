@@ -704,7 +704,7 @@ class Context:
         """
 
         # Create dictionary to find test type ID by test name.
-        test_types = self.db.get_TestTypes()
+        test_types = self.db.get_test_types()
         logger.debug(test_types)
         test_dictionary = {}
         for test_type in test_types:

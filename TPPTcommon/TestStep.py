@@ -218,7 +218,7 @@ class TestStep(Node, ABC):
 
             self.context.add_dut_point(float(test_result.panel_x), float(test_result.panel_y))
 
-        self.context.db.addAll(db_list)
+        self.context.db.add_all(db_list)
 
 
 def set_controls(tests, configurations):
