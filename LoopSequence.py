@@ -56,6 +56,9 @@ TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 # Absolute path of database file where results are saved.
 DATABASE_PATH = join_script_root_directory('database.sqlite')
 
+# Absolute path of file where database config is saved.
+CONFIG_PATH = join_script_root_directory('config.json')
+
 # Absolute path of file where script parameter history is saved.
 HISTORY_PATH = join_script_root_directory('history.json')
 
@@ -470,7 +473,8 @@ class Context:
         """
 
         # Open database just before execution to make sure that SQL objects are created in the same thread.
-        self.db = measurementdb.ResultDatabase(DATABASE_PATH, self.tests_node.test_case_modules)
+        measurementdb.setup_database(DATABASE_PATH, CONFIG_PATH)
+        self.db = measurementdb.get_database()
 
         try:
             self._execute()
