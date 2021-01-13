@@ -660,7 +660,7 @@ class Context:
         :param tip2_size: Diameter of second tip (mm).  If None, assume the same as tip1
         :return: The smallest viable finger separation (mm)
         """
-        min_clearance = 1.0
+        min_clearance = 3.0
 
         if tip2_size is None:
             tip2_size = tip1_size
