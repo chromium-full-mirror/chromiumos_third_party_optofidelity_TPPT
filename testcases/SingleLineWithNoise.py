@@ -47,7 +47,7 @@ class SingleLineWithNoise(NoiseTestStep):
 
     def _execute_gesture(self, gesture, dut):
         dut.drag(self.test_gesture.start_x, self.test_gesture.start_y, self.test_gesture.end_x, self.test_gesture.end_y,
-                 clearance=-2, azimuth1=0, azimuth2=0)
+                 clearance=-2, azimuth1=0, azimuth2=0, predelay=1)
 
     def _single_gesture_geometry(self, dut):
         grid = create_multi_swipe_diagonal(dut, 1, 0.0, 10.0)

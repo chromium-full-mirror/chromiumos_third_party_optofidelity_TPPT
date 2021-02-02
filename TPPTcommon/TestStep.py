@@ -277,6 +277,10 @@ class NoiseTestStep(TestStep):
     WARNING: All noise tests should only use one finger, and must be careful to leave the robot at azimuth 0 throughout
     test execution, because rotating the azimuth may cause damage while the function generator is attached.
 
+    When creating noise tests, the robot should delay for one second with the finger touching the surface before
+    performing the gesture. This is to allow the touch panel time to adapt to the noise. The first second of data
+    should then be ignored in analysis.
+
     For all noise tests, the same gesture is performed repeatedly while a square wave of 10V is applied through the
     tip with frequencies between 0 and 500,000 Hz in increments of 500 Hz.
     """
