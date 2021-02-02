@@ -23,6 +23,7 @@ import logging
 
 from abc import ABC, abstractmethod
 from copy import copy, deepcopy
+import random
 
 from noise.hp33120a import HP33120A
 from TPPTcommon.containers import Line, Point
@@ -341,7 +342,9 @@ class NoiseTestStep(TestStep):
         For this test, all gestures performed by the robot are identical, but the frequency of noise supplied by the
         function generator differs.
         """
-        return range(self.controls.freq_step, 500001, self.controls.freq_step)
+        frequencies = list(range(self.controls.freq_step, 500001, self.controls.freq_step))
+        random.shuffle(frequencies)
+        return frequencies
 
     def visualize_grid(self, dut):
         test_pattern = [self._single_gesture_geometry(dut)]
