@@ -222,6 +222,7 @@ class TestStep(Node, ABC):
         Save measurements for a single gesture to database.
         """
         db_list = []
+        self.context.clear_dut_points()
 
         for test_result in touch_list:
             results = self.results_class()
