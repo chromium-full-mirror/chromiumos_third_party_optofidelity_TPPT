@@ -325,6 +325,8 @@ class Context:
         to select its own tips.
         :param test: Active test object
         """
+        if test.is_manual:
+            return
         if hasattr(test.controls, "finger_name") and len(test.controls.finger_name) > 0:
             self.select_tips_by_name(test)
         elif hasattr(test.controls, "finger_size"):

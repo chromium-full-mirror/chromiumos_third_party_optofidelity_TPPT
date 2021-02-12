@@ -60,6 +60,10 @@ class TestsNode(Node):
         importfiles = []
         [importfiles.append(item) for item in importfiles_ if item not in importfiles]
 
+        noise_tests = []
+        manual_tests = []
+        other_tests = []
+
         modules = []
 
         for class_name in importfiles:
@@ -68,11 +72,21 @@ class TestsNode(Node):
 
             module = __import__(class_name, globals(), locals(), [class_name], 0)
 
-            # Create instance of test step class and add as child node.
-            Test = getattr(module, class_name)
-            self.add_child(Test(context))
+            test = getattr(module, class_name)(context)
 
+            if test.noise_injection_needed:
+                noise_tests.append(test)
+            elif test.is_manual:
+                manual_tests.append(test)
+            else:
+                other_tests.append(test)
             modules.append(module)
+
+        # Add tests in this order so that
+        #  * manual tests, which require the most attention, are first
+        #  * noise tests, which require attaching a function generator, are together and last.
+        for test in manual_tests + other_tests + noise_tests:
+            self.add_child(test)
 
         self.test_case_modules = modules
 

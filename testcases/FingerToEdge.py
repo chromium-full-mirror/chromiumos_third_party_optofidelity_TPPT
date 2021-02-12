@@ -22,66 +22,52 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 import logging
 
-from sqlalchemy import Column, Integer, Boolean, ForeignKey, VARCHAR
+from sqlalchemy import Column, Integer, Boolean, ForeignKey
 from sqlalchemy.orm import relationship
 
 
 from optofidelity_protocols.measurementdb import FingerToEdgeTest, FingerToEdgeResults
 from TPPTcommon.ConfigurationDatabase import ConfigurationDatabase
-from TPPTcommon.exceptions import TipSelectionError
-from TPPTcommon.grid import create_center_to_edge_lines
-from TPPTcommon.TestStep import TestStep
+from TPPTcommon.containers import Line
+from TPPTcommon.TestStep import ManualTestStep
 
 
 logger = logging.getLogger(__name__)
 
 
-class FingerToEdge(TestStep):
+class FingerToEdge(ManualTestStep):
     """
     In this test case we draw a line from the center of the surface to each edge, going completely over the edge.
     """
 
     def __init__(self, context):
         super().__init__('Finger To Edge', context)
-
-        self.database_configuration = FingerToEdgeTestParameters
         self.results_class = FingerToEdgeResults
 
-        sizes = list(map(str, sorted(context.tips_node.single_tips_by_size.keys())))
-
-        self.controls.finger_size = sizes[0] if len(sizes) > 0 else ""
-        self.controls.info['finger_size'] = {'label': 'Finger size (mm)', 'items': sizes}
-
-        self.speed = 30.0
-
-    def _pre_gesture_setup(self, line, dut):
-        self.context.set_robot_default_speed()
-        dut.jump(line.start_x, line.start_y, dut.base_distance, dut.base_distance)
-        self.context.set_robot_speed(self.speed)
-
-    def _execute_gesture(self, line, dut):
-        dut.drag(line.start_x, line.start_y, line.end_x, line.end_y, clearance=-2)
+    @property
+    def _instruction_text(self):
+        return "Use a finger to draw a line from the CENTER to the {} edge, going completely over the edge."
 
     def _create_grid(self, dut):
         border_extension = 10.0
 
-        grid = create_center_to_edge_lines(dut, -border_extension)
+        center_x = dut.width / 2.0
+        center_y = dut.height / 2.0
+        grid = [
+            ManualTestStep.Gesture(Line(center_x, center_y, 0, -border_extension, center_y, 0),
+                                   ("LEFT",)),
+            ManualTestStep.Gesture(Line(center_x, center_y, 0, dut.width + border_extension, center_y, 0),
+                                   ("RIGHT",)),
+            ManualTestStep.Gesture(Line(center_x, center_y, 0, center_x, -border_extension, 0),
+                                   ("TOP",)),
+            ManualTestStep.Gesture(Line(center_x, center_y, 0, center_x, dut.height + border_extension, 0),
+                                   ("BOTTOM",))
+        ]
 
         return grid
 
-    def tip_is_valid(self):
-        try:
-            self.context.tips_node.select_tips_by_size(float(self.controls.finger_size), 1, check_only=True)
-            return True
-        except TipSelectionError as e:
-            logger.error(str(e))
-            return False
-
-    def _create_gesture(self, line, test_item):
-        """
-        Create gesture and add to database.
-        :return: id of created gesture.
-        """
+    def _create_gesture(self, gesture_tuple, test_item):
+        line = gesture_tuple.gesture
         test = FingerToEdgeTest()
 
         test.start_x = line.start_x
@@ -89,7 +75,6 @@ class FingerToEdge(TestStep):
         test.end_x = line.end_x
         test.end_y = line.end_y
         test.test_id = test_item.id
-        test.finger_size = float(self.controls.finger_size)
 
         self.context.db.add(test)
 
@@ -104,4 +89,3 @@ class FingerToEdgeTestParameters(ConfigurationDatabase.TestConfigBase):
     _test_configuration_orm = relationship('TestConfiguration', back_populates='_finger_to_edge_configurations')
 
     enabled = Column(Boolean)
-    finger_size = Column(VARCHAR(40))

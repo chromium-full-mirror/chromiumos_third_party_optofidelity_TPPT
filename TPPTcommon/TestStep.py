@@ -22,6 +22,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import logging
 
 from abc import ABC, abstractmethod
+from collections import namedtuple
 from copy import copy, deepcopy
 import random
 
@@ -48,6 +49,7 @@ class TestStep(Node, ABC):
         self.results_class = None
         self.measurement_timeout = 2.5
         self.noise_injection_needed = False
+        self.is_manual = False
 
     def __repr__(self):
         return self.name
@@ -373,3 +375,71 @@ class NoiseTestStep(TestStep):
         except GridCreationError as e:
             logger.error(str(e))
             return False
+
+
+class ManualTestStep(TestStep):
+    """
+    Abstract class for tests where the operator is required to draw on the touch surface, with no robot gestures.
+    """
+
+    Gesture = namedtuple('Gesture', ['gesture', 'instruction_text_subs'])
+
+    def __init__(self, name, context):
+        super().__init__(name, context)
+        self.is_manual = True
+
+    @property
+    @abstractmethod
+    def _instruction_text(self):
+        """
+        Instruction text to be displayed for each gesture. Should allow text substitutions as provided by
+        Gesture.instruction_text_subs, using the String format() function.
+        """
+        pass
+
+    @abstractmethod
+    def _create_grid(self):
+        """
+        Create list of ManualTestStep.Gesture tuples, which hold both:
+         * the gesture shapes (lines, arcs, etc.) that define the geometry of the test case,
+         * and a tuple holding text substitutions for the instruction text.
+        """
+        pass
+
+    def _initial_setup(self, dut):
+        dut.move(0.0, 0.0, 30.0, azimuth=0.0)
+
+    def _pre_gesture_setup(self, gesture_tuple, dut):
+        self.context.toggle_pause()
+        self.context.ui.dialog_to_continue("Click Continue, and then: " +
+                                           self._instruction_text.format(*gesture_tuple.instruction_text_subs))
+        self.context.breakpoint()
+        self._draw_target_gesture(gesture_tuple.gesture, dut)
+
+    def _execute_gesture(self, gesture_tuple, dut):
+        pass
+
+    def visualize_grid(self, dut):
+        test_pattern = [gesture_tuple.gesture for gesture_tuple in self._create_grid(dut)]
+        return GridVisContainer(self.__class__.__name__, (dut.width, dut.height), test_pattern, dut.name)
+
+    def _draw_target_gesture(self, gesture, dut):
+        if isinstance(gesture, Line):
+            self._draw_target_line(gesture, dut)
+        else:
+            raise ValueError("Unsupported gesture type for manual test")
+
+    def _draw_target_line(self, line, dut):
+        dut_node = self.context.get_active_dut_node()
+        n_points = 100
+        x_scale = dut_node.resolution[0] / (dut.width * n_points)
+        y_scale = dut_node.resolution[1] / (dut.height * n_points)
+        self.context.clear_dut_points()
+        for i in range(n_points + 1):
+            x = x_scale * (line.start_x * (n_points - i) + line.end_x * i)
+            y = y_scale * (line.start_y * (n_points - i) + line.end_y * i)
+            self.context.ui.add_dut_point(x, y)
+
+    def tip_is_valid(self):
+        return True
+
