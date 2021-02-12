@@ -146,8 +146,6 @@ class TestStep(Node, ABC):
 
         self.context.close_db_test_item(test_item)
 
-        self._final_cleanup()
-
     def _initial_setup(self, dut):
         """
         Setup to be done one time before any gestures are executed.
@@ -168,9 +166,9 @@ class TestStep(Node, ABC):
         """
         pass
 
-    def _final_cleanup(self):
+    def final_cleanup(self):
         """
-        Clean up to be done one time after all gestures have been executed.
+        Clean up to be done one time after all gestures have been executed, or if the test is interrupted.
         """
         pass
 
@@ -334,8 +332,8 @@ class NoiseTestStep(TestStep):
 
         self.generator.generate_function(HP33120A.Waveforms.SQUARE, frequency, 10)
 
-    def _final_cleanup(self):
-        del self.generator
+    def final_cleanup(self):
+        self.generator = None
 
     @abstractmethod
     def _single_gesture_geometry(self, dut):

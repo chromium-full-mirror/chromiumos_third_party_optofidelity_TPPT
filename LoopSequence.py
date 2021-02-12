@@ -293,6 +293,7 @@ class Context:
             try:
                 test.execute()
             finally:
+                test.final_cleanup()
                 # If noise injector is attached, always make sure it is removed, even if the next test will use it,
                 # as the next test may need to move the azimuth during set up.
                 if test.noise_injection_needed:
