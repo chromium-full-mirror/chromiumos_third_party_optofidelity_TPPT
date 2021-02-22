@@ -20,7 +20,11 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 from .Base import *
+import logging
 import queue
+import time
+
+logger = logging.getLogger(__name__)
 
 class TapMeasurementDeviceSocket(TapMeasurement):
     '''
@@ -56,6 +60,7 @@ class ContinuousMeasurementDeviceSocket(ContinuousMeasurement):
 
     def _read_results(self):
         try:
+            start_time = time.time()
             # Read first event with timeout that should be sufficiently long for effector to reach DUT surface.
             item = self.dsock.queue.get(timeout=self.start_timeout)
             self.dsock.queue.task_done()
@@ -68,5 +73,8 @@ class ContinuousMeasurementDeviceSocket(ContinuousMeasurement):
             # Read events until timeout is exceeded
             for touch in self.dsock.CLine(timeout=self.timeout):
                 self.results.append(touch)
+                if time.time() - start_time > self.max_time:
+                    logger.warn("Measurement time exceeded {} seconds. Stopping measurement.".format(self.max_time))
+                    return
         except queue.Empty:
             pass # There was no event reported within timeout. This ends the measurement.

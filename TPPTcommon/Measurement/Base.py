@@ -80,15 +80,17 @@ class ContinuousMeasurement():
         self.results = None
         self.thread = Thread(target=self._thread_main)
 
-    def start(self, timeout=0.5, start_timeout=6.0):
+    def start(self, timeout=0.5, start_timeout=6.0, max_time=60.0):
         '''
         Start continuous measurement in a separate thread.
         :param timeout: Timeout in seconds between consecutive measurements.
         :param start_timeout: Timeout in seconds for the first measurement.
+        :param max_time: Maximum time in seconds to spend, even if new measurements are coming in.
         '''
 
         self.timeout = timeout
         self.start_timeout = start_timeout
+        self.max_time = max_time
         self.results = []
 
         self._start()
