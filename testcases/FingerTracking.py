@@ -62,6 +62,7 @@ class FingerTracking(TestStep):
     def _pre_gesture_setup(self, line, dut):
         self.context.set_robot_default_speed()
         dut.jump(line.start_x, line.start_y, dut.base_distance, dut.base_distance)
+        dut.move(line.start_x, line.start_y, dut.base_distance, azimuth=line.angle)
         self.context.set_robot_speed(self.controls.speed)
 
     def _execute_gesture(self, line, dut):

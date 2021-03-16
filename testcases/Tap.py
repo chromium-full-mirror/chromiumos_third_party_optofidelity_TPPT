@@ -66,11 +66,11 @@ class Tap(TestStep):
 
         # Jump over DUT without specific jump height to avoid problems in case tip was changed.
         dut.jump(tap.x, tap.y, dut.base_distance)
-
-    def _execute_gesture(self, tap, dut):
+        dut.move(tap.x, tap.y, dut.base_distance, azimuth=tap.angle)
         if tap.fingers == 2:
             self.context.robot.set_finger_separation(tap.finger_distance)
 
+    def _execute_gesture(self, tap, dut):
         # TODO (b/148627899): If two-finger dut.tap() robot client behavior is corrected, use that gesture instead
         dut.move(tap.x, tap.y, dut.base_distance, azimuth=tap.angle)
         dut.move(tap.x, tap.y, -2, azimuth=tap.angle)

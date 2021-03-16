@@ -57,6 +57,8 @@ class Drumroll(TestStep):
 
     def _pre_gesture_setup(self, drumroll, dut):
         dut.jump(drumroll.x, drumroll.y, dut.base_distance, dut.base_distance)
+        dut.move(drumroll.x, drumroll.y, dut.base_distance, azimuth=drumroll.angle)
+        self.context.robot.set_finger_separation(drumroll.finger_distance)
 
     def _execute_gesture(self, drumroll, dut):
         dut.drumroll(drumroll.x, drumroll.y, drumroll.angle, drumroll.finger_distance, self.number_taps, 2,

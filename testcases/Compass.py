@@ -62,6 +62,8 @@ class Compass(TestStep):
     def _pre_gesture_setup(self, compass, dut):
         self.context.set_robot_default_speed()
         dut.jump(compass.center_x, compass.center_y, dut.base_distance, dut.base_distance)
+        dut.move(compass.center_x, compass.center_y, dut.base_distance, azimuth=compass.start_azimuth)
+        self.context.robot.set_finger_separation(compass.separation)
         self.context.set_robot_speed(self.speed)
 
     def _execute_gesture(self, compass, dut):

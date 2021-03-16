@@ -61,6 +61,8 @@ class Pinch(TestStep):
     def _pre_gesture_setup(self, pinch, dut):
         self.context.set_robot_default_speed()
         dut.jump(pinch.center_x, pinch.center_y, dut.base_distance, dut.base_distance)
+        dut.move(pinch.center_x, pinch.center_y, pinch.azimuth)
+        self.context.robot.set_finger_separation(pinch.start_separation)
         self.context.set_robot_speed(self.speed)
 
     def _execute_gesture(self, pinch, dut):
