@@ -22,7 +22,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 import logging
 
-from sqlalchemy import Column, Integer, Boolean, ForeignKey, VARCHAR
+from sqlalchemy import Column, Integer, Boolean, Float, ForeignKey, VARCHAR
 from sqlalchemy.orm import relationship
 
 from optofidelity_protocols.measurementdb import PinchTest, PinchResults
@@ -54,14 +54,17 @@ class Pinch(TestStep):
         self.controls.num_fingers = 2
         self.controls.info['num_fingers'] = {'label': 'Number of Fingers', 'min': 2, 'max': 2}
 
+        self.controls.min_finger_clearance = 10.0
+        self.controls.info['min_finger_clearance'] = {'label': 'Minimum Clearance between fingers (mm)'}
+
         self.speed = 30.0
 
-        self.max_separation = 30.0
+        self.pinch_length = 10.0
 
     def _pre_gesture_setup(self, pinch, dut):
         self.context.set_robot_default_speed()
         dut.jump(pinch.center_x, pinch.center_y, dut.base_distance, dut.base_distance)
-        dut.move(pinch.center_x, pinch.center_y, pinch.azimuth)
+        dut.move(pinch.center_x, pinch.center_y, dut.base_distance, azimuth=pinch.azimuth)
         self.context.robot.set_finger_separation(pinch.start_separation)
         self.context.set_robot_speed(self.speed)
 
@@ -70,17 +73,19 @@ class Pinch(TestStep):
                   pinch.azimuth, clearance=-2)
 
     def _create_grid(self, dut):
-        if self.max_separation > dut.width or self.max_separation > dut.height:
+        min_separation = self._get_finger_separation(self.controls.min_finger_clearance,
+                                                     float(self.controls.finger_size))
+        max_separation = min_separation + self.pinch_length * 2
+        if max_separation > dut.width or max_separation > dut.height:
             raise GridCreationError("Pinch is too wide for DUT")
 
-        min_separation = self.context.get_min_separation(float(self.controls.finger_size))
         center_x = dut.width / 2
         center_y = dut.height / 2
 
         grid = []
         for azimuth in [0, 45, 90]:
-            grid.append(containers.Pinch(center_x, center_y, min_separation, self.max_separation, azimuth))
-            grid.append(containers.Pinch(center_x, center_y, self.max_separation, min_separation, azimuth))
+            grid.append(containers.Pinch(center_x, center_y, min_separation, max_separation, azimuth))
+            grid.append(containers.Pinch(center_x, center_y, max_separation, min_separation, azimuth))
         return grid
 
     def tip_is_valid(self):
@@ -122,3 +127,4 @@ class PinchTestParameters(ConfigurationDatabase.TestConfigBase):
     enabled = Column(Boolean)
     finger_size = Column(VARCHAR(40))
     num_fingers = Column(Integer)
+    min_finger_clearance = Column(Float)

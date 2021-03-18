@@ -57,6 +57,9 @@ class Compass(TestStep):
         self.controls.edge_width = 5.0
         self.controls.info['edge_width'] = {'label': 'Distance from edge (mm)'}
 
+        self.controls.finger_clearance = 10.0
+        self.controls.info['finger_clearance'] = {'label': 'Clearance between fingers (mm)'}
+
         self.speed = 30.0
 
     def _pre_gesture_setup(self, compass, dut):
@@ -71,7 +74,7 @@ class Compass(TestStep):
                     compass.separation, clearance=-2)
 
     def _create_grid(self, dut):
-        separation = self.context.get_min_separation(float(self.controls.finger_size))
+        separation = self._get_finger_separation(self.controls.finger_clearance, float(self.controls.finger_size))
 
         center_x = dut.width / 2
         center_y = dut.height / 2
@@ -140,3 +143,4 @@ class CompassTestParameters(ConfigurationDatabase.TestConfigBase):
     finger_size = Column(VARCHAR(40))
     num_fingers = Column(Integer)
     edge_width = Column(Float)
+    finger_clearance = Column(Float)

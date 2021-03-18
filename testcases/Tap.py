@@ -60,6 +60,9 @@ class Tap(TestStep):
         self.controls.edge_width = 5.0
         self.controls.info['edge_width'] = {'label': 'Distance from edge (mm)'}
 
+        self.controls.two_finger_clearance = 10.0
+        self.controls.info['two_finger_clearance'] = {'label': 'Clearance between fingers for two finger taps (mm)'}
+
     def _pre_gesture_setup(self, tap, dut):
         size = float(self.controls.multi_size if tap.fingers >= 3 else self.controls.single_size)
         self.context.tips_node.select_tips_by_size(size, tap.fingers)
@@ -87,7 +90,7 @@ class Tap(TestStep):
                 grid.append(containers.Point(x, y, 0, fingers=1))
 
         # Two fingers
-        separation = self.context.get_min_separation(float(self.controls.single_size))
+        separation = self._get_finger_separation(self.controls.two_finger_clearance, float(self.controls.single_size))
         grid.extend(create_multi_finger_tap_grid(dut, 2, separation))
 
         # More fingers
@@ -140,4 +143,5 @@ class TapTestParameters(ConfigurationDatabase.TestConfigBase):
     single_size = Column(VARCHAR(40))
     multi_size = Column(VARCHAR(40))
     edge_width = Column(Float)
+    two_finger_clearance = Column(Float)
 

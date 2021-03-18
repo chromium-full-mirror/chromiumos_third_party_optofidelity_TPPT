@@ -59,6 +59,9 @@ class FingerTracking(TestStep):
         self.controls.speed = 100.0
         self.controls.info['speed'] = {'label': 'Speed (mm/s)', 'min': 10.0}
 
+        self.controls.finger_clearance = 10.0
+        self.controls.info['finger_clearance'] = {'label': 'Clearance between fingers (mm)'}
+
     def _pre_gesture_setup(self, line, dut):
         self.context.set_robot_default_speed()
         dut.jump(line.start_x, line.start_y, dut.base_distance, dut.base_distance)
@@ -66,7 +69,7 @@ class FingerTracking(TestStep):
         self.context.set_robot_speed(self.controls.speed)
 
     def _execute_gesture(self, line, dut):
-        separation = self.context.get_min_separation(float(self.controls.finger_size))
+        separation = self._get_finger_separation(self.controls.finger_clearance, float(self.controls.finger_size))
         self.context.robot.set_finger_separation(separation)
 
         dut.move(line.start_x, line.start_y, dut.base_distance, azimuth=line.angle)
@@ -75,7 +78,7 @@ class FingerTracking(TestStep):
         dut.move(line.end_x, line.end_y, dut.base_distance, azimuth=line.angle)
 
     def _create_grid(self, dut):
-        separation = self.context.get_min_separation(float(self.controls.finger_size))
+        separation = self._get_finger_separation(self.controls.finger_clearance, float(self.controls.finger_size))
         border_width = 10.0
 
         grid = create_multi_swipe_horizontal(dut, self.controls.num_fingers, separation, border_width)
@@ -99,7 +102,7 @@ class FingerTracking(TestStep):
         :return: id of created gesture.
         """
         test = FingerTrackingTest()
-        separation = self.context.get_min_separation(float(self.controls.finger_size))
+        separation = self._get_finger_separation(self.controls.finger_clearance, float(self.controls.finger_size))
 
         test.start_x = line.start_x
         test.start_y = line.start_y
@@ -128,3 +131,4 @@ class FingerTrackingTestParameters(ConfigurationDatabase.TestConfigBase):
     finger_size = Column(VARCHAR(40))
     num_fingers = Column(Integer)
     speed = Column(Float)
+    finger_clearance = Column(Float)

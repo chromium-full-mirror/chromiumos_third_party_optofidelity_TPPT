@@ -22,7 +22,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 import logging
 
-from sqlalchemy import Column, Integer, Boolean, ForeignKey, VARCHAR
+from sqlalchemy import Column, Integer, Boolean, Float, ForeignKey, VARCHAR
 from sqlalchemy.orm import relationship
 
 from optofidelity_protocols.measurementdb import SwipeTest, SwipeResults
@@ -55,6 +55,9 @@ class Swipe(TestStep):
         self.controls.num_fingers = 1
         self.controls.info['num_fingers'] = {'label': 'Number of Fingers', 'min': 1, 'max': 2}
 
+        self.controls.finger_clearance = 10.0
+        self.controls.info['finger_clearance'] = {'label': 'Clearance between fingers (mm)'}
+
         self.speed = 300.0
 
     def _pre_gesture_setup(self, line, dut):
@@ -63,13 +66,13 @@ class Swipe(TestStep):
         self.context.set_robot_speed(self.speed)
 
     def _execute_gesture(self, line, dut):
-        separation = self.context.get_min_separation(float(self.controls.finger_size))
+        separation = self._get_finger_separation(self.controls.finger_clearance, float(self.controls.finger_size))
         self.context.robot.set_finger_separation(separation)
         dut.swipe(line.start_x, line.start_y, line.end_x, line.end_y, clearance=-2, radius=20,
                   azimuth1=line.angle, azimuth2=line.angle)
 
     def _create_grid(self, dut):
-        separation = self.context.get_min_separation(float(self.controls.finger_size))
+        separation = self._get_finger_separation(self.controls.finger_clearance, float(self.controls.finger_size))
         border_width = 10.0
 
         grid = create_multi_swipe_horizontal(dut, self.controls.num_fingers, separation, border_width)
@@ -93,7 +96,7 @@ class Swipe(TestStep):
             return False
 
     def _create_gesture(self, line, test_item):
-        separation = self.context.get_min_separation(float(self.controls.finger_size))
+        separation = self._get_finger_separation(self.controls.finger_clearance, float(self.controls.finger_size))
         test = SwipeTest()
 
         test.start_x = line.start_x
@@ -122,3 +125,4 @@ class SwipeTestParameters(ConfigurationDatabase.TestConfigBase):
     enabled = Column(Boolean)
     finger_size = Column(VARCHAR(40))
     num_fingers = Column(Integer)
+    finger_clearance = Column(Float)

@@ -22,7 +22,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 import logging
 
-from sqlalchemy import Column, Integer, Boolean, ForeignKey, VARCHAR
+from sqlalchemy import Column, Integer, Boolean, Float, ForeignKey, VARCHAR
 from sqlalchemy.orm import relationship
 
 from optofidelity_protocols.measurementdb import StationaryWithTapsTest, StationaryWithTapsResults
@@ -53,6 +53,9 @@ class StationaryWithTaps(TestStep):
         self.controls.num_fingers = 2
         self.controls.info['num_fingers'] = {'label': 'Number of Fingers', 'min': 2, 'max': 2}
 
+        self.controls.finger_clearance = 10.0
+        self.controls.info['finger_clearance'] = {'label': 'Clearance between fingers (mm)'}
+
         self.speed = 3.0
         self.tap_azimuth_step = 8.0
 
@@ -60,7 +63,7 @@ class StationaryWithTaps(TestStep):
         self.context.set_robot_default_speed()
         dut.jump(compass.center_x, compass.center_y, dut.base_distance, dut.base_distance)
         dut.move(compass.center_x, compass.center_y, dut.base_distance, azimuth=compass.start_azimuth)
-        separation = self.context.get_min_separation(float(self.controls.finger_size))
+        separation = self._get_finger_separation(self.controls.finger_clearance, float(self.controls.finger_size))
         self.context.robot.set_finger_separation(separation)
         self.context.set_robot_speed(self.speed)
 
@@ -69,7 +72,7 @@ class StationaryWithTaps(TestStep):
                         compass.separation, self.tap_azimuth_step, tap_with_stationary_finger=False, clearance=-2)
 
     def _create_grid(self, dut):
-        separation = self.context.get_min_separation(float(self.controls.finger_size))
+        separation = self._get_finger_separation(self.controls.finger_clearance, float(self.controls.finger_size))
 
         center_x = dut.width / 2
         center_y = dut.height / 2
@@ -119,3 +122,4 @@ class StationaryWithTapsTestParameters(ConfigurationDatabase.TestConfigBase):
     enabled = Column(Boolean)
     finger_size = Column(VARCHAR(40))
     num_fingers = Column(Integer)
+    finger_clearance = Column(Float)

@@ -241,6 +241,30 @@ class TestStep(Node, ABC):
 
         self.context.db.add_all(db_list)
 
+    def _get_finger_separation(self, clearance, tip1_size, tip2_size=None):
+        """
+        Given a desired finger clearance (edge to edge) and finger size, return the needed finger separation (center to
+        center) if tips with given size were attached.
+        :param clearance: Desired clearance between finger tips.
+        :param tip1_size: Diameter of first tip (mm).
+        :param tip2_size: Diameter of second tip (mm).  If None, assume the same as tip1.
+        :return: The smallest finger separation (mm).
+        """
+        min_clearance = 0.1
+        if clearance < min_clearance:
+            raise ValueError("Finger clearance must be greater than {} mm.".format(min_clearance))
+
+        if tip2_size is None:
+            tip2_size = tip1_size
+        separation = (tip1_size + tip2_size) / 2.0 + clearance
+
+        # TODO (b/148627899): Poll the robot for minimum separation
+        min_robot_separation = 10.5
+        if separation < min_robot_separation:
+            raise ValueError("Finger separation must be greater than {} mm.".format(min_robot_separation))
+
+        return separation
+
 
 def set_controls(tests, configurations):
     tests_with_set_controls = []

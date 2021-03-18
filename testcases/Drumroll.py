@@ -22,7 +22,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 import logging
 
-from sqlalchemy import Column, Integer, Boolean, ForeignKey, VARCHAR
+from sqlalchemy import Column, Integer, Boolean, Float, ForeignKey, VARCHAR
 from sqlalchemy.orm import relationship
 
 from optofidelity_protocols.measurementdb import DrumrollTest, DrumrollResults
@@ -53,6 +53,9 @@ class Drumroll(TestStep):
         self.controls.num_fingers = 2
         self.controls.info['num_fingers'] = {'label': 'Number of Fingers', 'min': 2, 'max': 2}
 
+        self.controls.finger_clearance = 10.0
+        self.controls.info['finger_clearance'] = {'label': 'Clearance between fingers (mm)'}
+
         self.number_taps = 24
 
     def _pre_gesture_setup(self, drumroll, dut):
@@ -65,7 +68,7 @@ class Drumroll(TestStep):
                      clearance=-2)
 
     def _create_grid(self, dut):
-        separation = self.context.get_min_separation(float(self.controls.finger_size))
+        separation = self._get_finger_separation(self.controls.finger_clearance, float(self.controls.finger_size))
         return create_multi_finger_tap_grid(dut, 2, separation)
 
     def tip_is_valid(self):
@@ -106,3 +109,4 @@ class DrumrollTestParameters(ConfigurationDatabase.TestConfigBase):
     enabled = Column(Boolean)
     finger_size = Column(VARCHAR(40))
     num_fingers = Column(Integer)
+    finger_clearance = Column(Float)
