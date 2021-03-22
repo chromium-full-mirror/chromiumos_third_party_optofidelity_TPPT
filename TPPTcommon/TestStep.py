@@ -372,6 +372,9 @@ class NoiseTestStep(TestStep):
         function generator differs.
         """
         frequencies = list(range(self.controls.freq_step, 500001, self.controls.freq_step))
+        # Make the frequencies appear in the same order if using the same step. This will allow us to restart a test
+        # run part-way through if there is a robot failure.
+        random.seed(0)
         random.shuffle(frequencies)
         return frequencies
 
