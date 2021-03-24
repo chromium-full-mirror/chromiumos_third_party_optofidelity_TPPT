@@ -45,6 +45,7 @@ class RepeatedTaps(TestStep):
         self.database_configuration = RepeatedTapsTestParameters
         self.results_class = RepeatedTapsResults
         self.measurement_timeout = 6.0
+        self.max_gesture_time = 120.0
 
         sizes = list(map(str, sorted(context.tips_node.single_tips_by_size.keys())))
 

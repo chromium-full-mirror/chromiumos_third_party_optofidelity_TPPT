@@ -48,6 +48,7 @@ class TestStep(Node, ABC):
         self.database_configuration = None
         self.results_class = None
         self.measurement_timeout = 2.5
+        self.max_gesture_time = 60.0
         self.noise_injection_needed = False
         self.is_manual = False
 
@@ -133,7 +134,7 @@ class TestStep(Node, ABC):
             self._pre_gesture_setup(gesture, dut)
 
             continuous_measurement = self.context.create_continuous_measurement(gesture)
-            continuous_measurement.start(timeout=self.measurement_timeout)
+            continuous_measurement.start(timeout=self.measurement_timeout, max_time=self.max_gesture_time)
 
             self._execute_gesture(gesture, dut)
 
