@@ -82,24 +82,38 @@ class TnTRobotClient(TnTClientObject):
 
         self._PUT("position", params)
 
-    def change_tip(self, tip, finger_id=0):
+    def change_tip(self, tip, finger_id=0, attach_manually=False):
         """
         Commands robot to change new tool tip from tip holder.
         :param tip: Name of tip to make the current tip.
         :param finger_id: ID of finger where to change tip to.
+        :param attach_manually: If tip is to be attached manually and not with the tip changer.
+        :return: Name of the tip that was attached as dict {"tip": tip_name}
         """
         if isinstance(tip, TnTTipClient):
             tip = tip.name
 
-        self._PUT("change_tip", { "tip_id": tip, "finger_id": finger_id })
+        params = {
+            'tip': tip,
+            'finger_id': finger_id,
+            'attach_manually': attach_manually,
+        }
 
-    def detach_tip(self, finger_id=0):
+        return self._PUT('change_tip', params)
+
+    def detach_tip(self, finger_id=0, detach_manually=False):
         """
         Detach tip from robot finger if one is attached.
         :param finger_id: ID of finger.
-        :return: Name of the tip that was detached.
+        :param detach_manually: If tip is to be detached manually and not with the tip changer.
+        :return: Name of the tip that was detached as dict {"tip": tip_name}.
         """
-        return self._PUT("detach_tip", {"finger_id": finger_id})
+        params = {
+            'finger_id': finger_id,
+            'detach_manually': detach_manually,
+        }
+
+        return self._PUT('detach_tip', params)
 
     def get_position(self, context="tnt"):
         """
