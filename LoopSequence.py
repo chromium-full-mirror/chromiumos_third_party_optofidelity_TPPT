@@ -20,6 +20,7 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 import logging
+import subprocess
 import os
 
 import TPPTcommon.Drivers.devicesocket as devicesocket
@@ -190,27 +191,17 @@ class Context:
 
     def get_tppt_version(self):
         """
-        Returns TPPT version number string including Jenkins build number from version.txt.
-        If version.txt doesn't exist, version number is set to "x.x".
+        Returns TPPT version number based on git tags.
         :return Version number
         """
-
-        version_number = "x"
-        build_number = "x"
-
-        # Read build number from version.txt
         path = os.path.dirname(os.path.abspath(__file__))
-        version_file_name = os.path.join(path, "version.txt")
-        if os.path.exists(version_file_name):
-            with open(version_file_name, 'r') as file:
-                # Read all "key: value" pairs into a dict
-                version_info = dict(line.split(':', 1) for line in file)
-                if 'Version' in version_info:
-                    version_number = version_info['Version'].strip()
-                if 'Build' in version_info:
-                    build_number = version_info['Build'].strip()
-
-        return version_number + "." + build_number
+        try:
+            version = subprocess.check_output(['git', 'describe', '--dirty'], cwd=path)
+            version = version.decode('utf-8').strip()
+        except subprocess.CalledProcessError as e:
+            version = "NONE"
+            logger.warn("Could not determine TPPT software version. Check that your git repository has version tags.")
+        return version
 
     def create_dut_visualization(self, xpixels, ypixels):
         """

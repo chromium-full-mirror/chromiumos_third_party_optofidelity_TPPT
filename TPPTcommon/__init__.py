@@ -19,9 +19,3 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
-# Version is in the form A.B.C.D
-# A: Fixed to 5 for TPPT GT platform
-# B: TPPT platform release version.
-# C: Project ID. Zero for platform.
-# D: Project release version. Zero is initial release to customer.
-__version__ = "5.1.4555.0"

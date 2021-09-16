@@ -1,4 +1,0 @@
-Build: 47
-Version: 5.1.4555.0
-Commit: e69355908a46d39b4a64df46f6601d6624003faa
-Date: 2020-01-15 14:07:06
