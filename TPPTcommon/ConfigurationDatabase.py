@@ -342,6 +342,9 @@ class TestConfiguration(ConfigurationDatabase.TestConfigBase):
     _thumb_configurations = \
         relationship('ThumbTestParameters', back_populates='_test_configuration_orm')
 
+    _latency_configurations = \
+        relationship('LatencyTestParameters', back_populates='_test_configuration_orm')
+
     __table_args__ = (UniqueConstraint('name', 'configuration_group', name='_name_group_uc'),)
 
 

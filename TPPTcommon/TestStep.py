@@ -121,10 +121,12 @@ class TestStep(Node, ABC):
         """
         Tell the robot to perform each gesture in turn, and record the events from the DUT.
         """
+        save_to_db = self.results_class is not None
         dut = self.context.get_active_dut()
         self.context.html("Running %s test for dut:%s" % (self.name, dut))
-        test_item = self.context.create_db_test_item("%s Test" % self.name)
         gestures = self._create_grid(dut)
+        if save_to_db:
+            test_item = self.context.create_db_test_item("%s Test" % self.name)
 
         self._initial_setup(dut)
 
@@ -133,19 +135,22 @@ class TestStep(Node, ABC):
 
             self._pre_gesture_setup(gesture, dut)
 
-            continuous_measurement = self.context.create_continuous_measurement(gesture)
-            continuous_measurement.start(timeout=self.measurement_timeout, max_time=self.max_gesture_time)
+            if save_to_db:
+                continuous_measurement = self.context.create_continuous_measurement(gesture)
+                continuous_measurement.start(timeout=self.measurement_timeout, max_time=self.max_gesture_time)
 
             self._execute_gesture(gesture, dut)
 
-            continuous_measurement.end()
-            touch_list = continuous_measurement.parse_data()
-            gesture_id = self._create_gesture(gesture, test_item)
-            self._save_measurement_data(gesture_id, touch_list)
+            if save_to_db:
+                continuous_measurement.end()
+                touch_list = continuous_measurement.parse_data()
+                gesture_id = self._create_gesture(gesture, test_item)
+                self._save_measurement_data(gesture_id, touch_list)
 
             self.context.breakpoint()
 
-        self.context.close_db_test_item(test_item)
+        if save_to_db:
+            self.context.close_db_test_item(test_item)
 
     def _initial_setup(self, dut):
         """
