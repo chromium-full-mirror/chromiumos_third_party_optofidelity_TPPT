@@ -345,6 +345,9 @@ class TestConfiguration(ConfigurationDatabase.TestConfigBase):
     _latency_configurations = \
         relationship('LatencyTestParameters', back_populates='_test_configuration_orm')
 
+    _physical_click_configurations = \
+        relationship('PhysicalClickTestParameters', back_populates='_test_configuration_orm')
+
     __table_args__ = (UniqueConstraint('name', 'configuration_group', name='_name_group_uc'),)
 
 

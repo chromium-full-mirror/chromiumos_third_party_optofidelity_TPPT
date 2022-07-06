@@ -240,6 +240,7 @@ class TestStep(Node, ABC):
             results.tool_type = test_result.tool_type
             results.time = test_result.time
             results.event = test_result.event
+            results.button_pressed = test_result.button_pressed
             results.gesture_id = gesture_id
 
             db_list.append(results)
