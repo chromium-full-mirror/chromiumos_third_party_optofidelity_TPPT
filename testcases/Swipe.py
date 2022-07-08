@@ -73,7 +73,7 @@ class Swipe(TestStep):
 
     def _create_grid(self, dut):
         separation = self._get_finger_separation(self.controls.finger_clearance, float(self.controls.finger_size))
-        border_width = 10.0
+        border_width = 50.0
 
         grid = create_multi_swipe_horizontal(dut, self.controls.num_fingers, separation, border_width)
         grid.extend(create_multi_swipe_vertical(dut, self.controls.num_fingers, separation, border_width))
