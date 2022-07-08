@@ -350,11 +350,6 @@ class NoiseTestStep(TestStep):
 
         dut.move(self.start_point.x, self.start_point.y, dut.base_distance, azimuth=0)
 
-        self.context.toggle_pause()
-        self.context.ui.dialog_to_continue("Please attach the function generator to the robot tip, make sure DUT is "
-                                           "grounded, and make sure the function generator is on.")
-        self.context.breakpoint()
-
         self.generator = HP33120A(self.controls.device_path)
 
     def _pre_gesture_setup(self, frequency, dut):

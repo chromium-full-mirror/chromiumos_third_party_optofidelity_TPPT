@@ -168,6 +168,8 @@ class Context:
 
         self.db = None
 
+        self.function_generator_attached = False
+
         # Update initial values in UI.
         ui.set_history_headers(self.load_history_headers())
         ui.set_script_nodes(self.root_node.to_dict())
@@ -280,20 +282,32 @@ class Context:
             self.indicators.set_status("Executing test case " + test.name + ' (' + str(test_count) + ' / ' + str(
                 len(executable_tests)) + ')')
 
+            if test.noise_injection_needed and not self.function_generator_attached:
+                self.prompt_to_attach_function_generator()
+            elif not test.noise_injection_needed and self.function_generator_attached:
+                self.prompt_to_detach_function_generator()
+
             # Run test case.
             try:
                 test.execute()
             finally:
                 test.final_cleanup()
-                # If noise injector is attached, always make sure it is removed, even if the next test will use it,
-                # as the next test may need to move the azimuth during set up.
-                if test.noise_injection_needed:
-                    self.prompt_to_detach_function_generator()
+
+        if self.function_generator_attached:
+            self.prompt_to_detach_function_generator()
 
     def prompt_to_detach_function_generator(self):
         self.toggle_pause()
         self.ui.dialog_to_continue("IMPORTANT! Make sure function generator is not attached to robot tip, "
                                    "and that DUT is not grounded.")
+        self.function_generator_attached = False
+        self.breakpoint()
+
+    def prompt_to_attach_function_generator(self):
+        self.toggle_pause()
+        self.ui.dialog_to_continue("Please attach the function generator to the robot tip, make sure DUT is "
+                                           "grounded, and make sure the function generator is on.")
+        self.function_generator_attached = True
         self.breakpoint()
 
     def select_tips_by_name(self, test):
