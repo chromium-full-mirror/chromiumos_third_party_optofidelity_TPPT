@@ -232,6 +232,7 @@ class TestStep(Node, ABC):
             results.panel_y = float(test_result.panel_y)
             results.pressure = float(test_result.pressure)
             results.finger_id = int(test_result.finger_id)
+            results.tool_type = test_result.tool_type
             results.time = test_result.time
             results.event = test_result.event
             results.gesture_id = gesture_id
