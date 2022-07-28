@@ -293,6 +293,9 @@ class Context:
             finally:
                 test.final_cleanup()
 
+        active_dut = self.get_active_dut()
+        active_dut.jump(0.0, 0.0, active_dut.base_distance)
+
         if self.function_generator_attached:
             self.prompt_to_detach_function_generator()
 
