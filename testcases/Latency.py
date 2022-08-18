@@ -52,7 +52,7 @@ class Latency(TestStep):
         self.controls.finger_size = sizes[0] if len(sizes) > 0 else ""
         self.controls.info['finger_size'] = {'label': 'Finger size (mm)', 'items': sizes}
 
-        self.speed = 60.0
+        self.speed = 200.0
         self.num_passes = 30
 
     def _initial_setup(self, dut):
