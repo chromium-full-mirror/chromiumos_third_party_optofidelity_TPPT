@@ -351,6 +351,9 @@ class TestConfiguration(ConfigurationDatabase.TestConfigBase):
     _force_configurations = \
         relationship('ForceTestParameters', back_populates='_test_configuration_orm')
 
+    _force_hysteresis_configurations = \
+        relationship('ForceHysteresisTestParameters', back_populates='_test_configuration_orm')
+
     __table_args__ = (UniqueConstraint('name', 'configuration_group', name='_name_group_uc'),)
 
 
