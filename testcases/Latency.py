@@ -52,11 +52,14 @@ class Latency(TestStep):
         self.controls.finger_size = sizes[0] if len(sizes) > 0 else ""
         self.controls.info['finger_size'] = {'label': 'Finger size (mm)', 'items': sizes}
 
+        self.controls.edge_width = 5.0
+        self.controls.info['edge_width'] = {'label': 'Distance from edge (mm)'}
+
         self.speed = 200.0
         self.num_passes = 30
 
     def _initial_setup(self, dut):
-        border_width = 5.0 + float(self.controls.finger_size)
+        border_width = float(self.controls.edge_width) + float(self.controls.finger_size)
         self.context.set_robot_default_speed()
         dut.jump(border_width, border_width, dut.base_distance, dut.base_distance)
         self.context.set_robot_speed(self.speed)
@@ -69,7 +72,7 @@ class Latency(TestStep):
         dut.move(line.end_x, line.end_y, -0.5, azimuth=0)
 
     def _create_grid(self, dut):
-        border_width = 5.0 + float(self.controls.finger_size)
+        border_width = float(self.controls.edge_width) + float(self.controls.finger_size)
         if 2 * border_width > dut.width or 2 * border_width > dut.height:
             raise GridCreationError("DUT is too small for test")
 
